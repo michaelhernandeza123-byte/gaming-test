@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Colorful coral reef with two paths">
+  <defs><linearGradient id="water" x2="0" y2="1"><stop stop-color="#0ea5e9"/><stop offset="1" stop-color="#083344"/></linearGradient></defs>
+  <rect width="640" height="300" fill="url(#water)"/>
+  <path d="M0 255Q160 205 290 260Q430 205 640 250V300H0Z" fill="#155e75"/>
+  <path d="M285 300Q300 220 320 195Q340 220 355 300" fill="#67e8f9" opacity=".5"/>
+  <g stroke-linecap="round" stroke-width="12" fill="none"><path d="M70 280v-80m0 35l-30-30m30 10l35-45" stroke="#fb7185"/><path d="M550 285v-90m0 35l-35-35m35 15l28-42" stroke="#c084fc"/></g>
+  <g fill="#fde047"><circle cx="130" cy="250" r="18"/><circle cx="490" cy="260" r="20"/></g>
+</svg>

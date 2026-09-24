@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Bright current winding through a school of fish">
+  <rect width="640" height="300" fill="#075985"/>
+  <path d="M-20 220C130 70 250 300 410 120C505 15 590 90 680 35" fill="none" stroke="#67e8f9" stroke-opacity=".65" stroke-width="55"/>
+  <path d="M-20 220C130 70 250 300 410 120C505 15 590 90 680 35" fill="none" stroke="#ecfeff" stroke-opacity=".7" stroke-width="4" stroke-dasharray="18 14"/>
+  <g fill="#e0f2fe"><path d="M150 70l18 8-18 8 5-8Z"/><path d="M260 210l18 8-18 8 5-8Z"/><path d="M460 82l18 8-18 8 5-8Z"/></g>
+</svg>

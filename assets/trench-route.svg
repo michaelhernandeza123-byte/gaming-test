@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Narrow illuminated route through an underwater trench">
+  <defs><linearGradient id="trench" x2="0" y2="1"><stop stop-color="#0e7490"/><stop offset="1" stop-color="#020617"/></linearGradient></defs>
+  <rect width="640" height="300" fill="url(#trench)"/>
+  <path d="M0 0h190l80 85-55 70 70 145H0ZM640 0H460l-75 90 55 70-65 140h265Z" fill="#1e293b"/>
+  <path d="M300 0l20 300M360 0l-20 300" stroke="#67e8f9" stroke-opacity=".28" stroke-width="25"/>
+  <circle cx="320" cy="145" r="8" fill="#fef08a"/>
+</svg>

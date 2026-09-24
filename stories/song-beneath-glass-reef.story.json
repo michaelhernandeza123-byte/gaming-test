@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "id": "song-beneath-glass-reef-v1",
+  "title": "The Song Beneath Glass Reef",
+  "startNodeId": "moonlit-descent",
+  "sceneCount": 6,
+  "whaleEncounterNodeId": "whale-song",
+  "nodes": [
+    {
+      "id": "moonlit-descent",
+      "text": "At twilight, you descend toward Glass Reef to investigate a melody echoing through the water. Your instruments cannot identify its source.",
+      "visual": {
+        "background": "assets/calm-ocean.svg",
+        "backgroundAlt": "A small submersible descending through calm blue water at twilight",
+        "character": "assets/submersible.svg",
+        "characterAlt": "Your yellow research submersible"
+      },
+      "choices": [
+        {
+          "id": "follow-melody",
+          "text": "Follow the melody toward the reef",
+          "nextNodeId": "whale-song",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "whale-song",
+      "text": "A humpback whale circles an old research buoy. Its song changes whenever a dangerous current sweeps across the reef.",
+      "visual": {
+        "background": "assets/whale-water.svg",
+        "backgroundAlt": "Deep blue water surrounding an old research buoy",
+        "character": "assets/whale.svg",
+        "characterAlt": "A humpback whale singing beside the buoy"
+      },
+      "choices": [
+        {
+          "id": "listen-warning",
+          "text": "Record the whale's warning pattern and follow its lead",
+          "nextNodeId": "glass-reef",
+          "effects": [
+            {
+              "type": "setFlag",
+              "flag": "trustedWhale",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "trust-instruments",
+          "text": "Trust your instruments and continue the survey alone",
+          "nextNodeId": "glass-reef",
+          "effects": [
+            {
+              "type": "setFlag",
+              "flag": "trustedWhale",
+              "value": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glass-reef",
+      "text": "Inside the glittering reef, a young manta ray is pinned beneath a fallen sensor frame. A wall of bubbles warns that the current is strengthening.",
+      "visual": {
+        "background": "assets/coral-reef.svg",
+        "backgroundAlt": "A colorful glasslike coral reef surrounding a fallen sensor frame"
+      },
+      "choices": [
+        {
+          "id": "rescue-manta",
+          "text": "Use the submersible arm to free the manta ray",
+          "nextNodeId": "rising-current",
+          "effects": [
+            {
+              "type": "setFlag",
+              "flag": "rescuedManta",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "mark-location",
+          "text": "Mark its location and save power for the worsening current",
+          "nextNodeId": "rising-current",
+          "effects": [
+            {
+              "type": "setFlag",
+              "flag": "rescuedManta",
+              "value": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rising-current",
+      "text": "The current surges through Glass Reef, hiding the safest route home.",
+      "textVariants": [
+        {
+          "when": {
+            "flag": "trustedWhale",
+            "equals": true
+          },
+          "text": "The current surges, but the whale repeats its warning pattern. You recognize a calm interval and guide the submersible through it."
+        },
+        {
+          "when": {
+            "flag": "trustedWhale",
+            "equals": false
+          },
+          "text": "The current overwhelms your instruments. You must navigate by the reef's faint markers while the submersible is pushed toward deeper water."
+        }
+      ],
+      "visual": {
+        "background": "assets/current-route.svg",
+        "backgroundAlt": "A winding current crossing the underwater reef"
+      },
+      "visualVariants": [
+        {
+          "when": {
+            "flag": "trustedWhale",
+            "equals": true
+          },
+          "background": "assets/current-route.svg",
+          "backgroundAlt": "A bright safe interval opening through the strong current",
+          "character": "assets/whale.svg",
+          "characterAlt": "The whale showing the safe route"
+        },
+        {
+          "when": {
+            "flag": "trustedWhale",
+            "equals": false
+          },
+          "background": "assets/whirlpool.svg",
+          "backgroundAlt": "Powerful currents pulling the submersible toward deeper water",
+          "character": "assets/submersible.svg",
+          "characterAlt": "The submersible struggling against the current"
+        }
+      ],
+      "choices": [
+        {
+          "id": "reach-crossing",
+          "text": "Reach the final crossing",
+          "nextNodeId": "final-crossing",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "final-crossing",
+      "text": "Beyond the reef, the whale turns toward a sheltered lagoon while your surface team calls from above. You have enough power for only one route.",
+      "visual": {
+        "background": "assets/trench-route.svg",
+        "backgroundAlt": "Two routes dividing beyond the dark edge of Glass Reef",
+        "character": "assets/whale.svg",
+        "characterAlt": "The whale waiting beside the route to a sheltered lagoon"
+      },
+      "choices": [
+        {
+          "id": "choose-lagoon",
+          "text": "Follow the whale into the sheltered lagoon",
+          "nextNodeId": "lagoon-ending",
+          "effects": []
+        },
+        {
+          "id": "choose-surface",
+          "text": "Use the remaining power to reach the surface team",
+          "nextNodeId": "surface-ending",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "lagoon-ending",
+      "text": "You enter the sheltered lagoon and discover a nursery protected from the current.",
+      "textVariants": [
+        {
+          "when": {
+            "flag": "rescuedManta",
+            "equals": true
+          },
+          "text": "The manta ray you rescued joins a nursery inside the sheltered lagoon. Your recordings prove that the whale's song protects an entire migration route, and Glass Reef is declared a sanctuary."
+        },
+        {
+          "when": {
+            "flag": "rescuedManta",
+            "equals": false
+          },
+          "text": "Inside the sheltered lagoon, you locate a rescue channel leading back to the trapped manta ray. Your precise location marker lets the surface team free it and protect the nursery."
+        }
+      ],
+      "visual": {
+        "background": "assets/hidden-lagoon.svg",
+        "backgroundAlt": "A glowing sheltered lagoon that serves as a marine nursery",
+        "character": "assets/whale.svg",
+        "characterAlt": "The whale resting safely inside the lagoon"
+      },
+      "choices": [],
+      "ending": true
+    },
+    {
+      "id": "surface-ending",
+      "text": "You reach the surface team with evidence from Glass Reef.",
+      "textVariants": [
+        {
+          "when": {
+            "flag": "rescuedManta",
+            "equals": true
+          },
+          "text": "You surface with footage of the manta rescue and the whale's changing song. The team recognizes how animals warn one another, and your discovery reshapes the reef expedition."
+        },
+        {
+          "when": {
+            "flag": "rescuedManta",
+            "equals": false
+          },
+          "text": "You surface with power to spare and an exact marker for the trapped manta ray. The team launches a safe rescue while your current data reveals why the whale was singing."
+        }
+      ],
+      "visual": {
+        "background": "assets/surface-route.svg",
+        "backgroundAlt": "The submersible rising into sunlight beside the waiting surface team",
+        "character": "assets/submersible.svg",
+        "characterAlt": "Your submersible returning safely to the surface"
+      },
+      "choices": [],
+      "ending": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Calm blue ocean canyon">
+  <defs><linearGradient id="water" x2="0" y2="1"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#075985"/></linearGradient></defs>
+  <rect width="640" height="300" fill="url(#water)"/>
+  <path d="M80 0l120 300M190 0l70 300M310 0l30 300" stroke="#e0f2fe" stroke-opacity=".18" stroke-width="28"/>
+  <path d="M0 260Q110 215 225 265T450 252T640 245V300H0Z" fill="#164e63"/>
+  <g fill="none" stroke="#bae6fd" stroke-width="3" opacity=".7"><circle cx="90" cy="155" r="8"/><circle cx="112" cy="122" r="5"/><circle cx="525" cy="90" r="7"/></g>
+</svg>

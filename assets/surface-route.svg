@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Ocean route rising toward sunlight">
+  <defs><linearGradient id="surface" x2="0" y2="1"><stop stop-color="#fef9c3"/><stop offset=".22" stop-color="#38bdf8"/><stop offset="1" stop-color="#075985"/></linearGradient></defs>
+  <rect width="640" height="300" fill="url(#surface)"/>
+  <circle cx="320" cy="18" r="42" fill="#fef08a" opacity=".9"/>
+  <path d="M0 52q80-20 160 0t160 0t160 0t160 0" fill="none" stroke="#e0f2fe" stroke-width="8"/>
+  <path d="M240 55l80 245M400 55l-80 245" stroke="#fef9c3" stroke-opacity=".27" stroke-width="45"/>
+  <g fill="#bae6fd"><circle cx="110" cy="180" r="6"/><circle cx="130" cy="150" r="9"/></g>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Ancient underwater ruins marking a hidden passage">
+  <defs><linearGradient id="ruinWater" x2="0" y2="1"><stop stop-color="#0369a1"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient></defs>
+  <rect width="640" height="300" fill="url(#ruinWater)"/>
+  <path d="M0 270Q170 230 330 270T640 255V300H0Z" fill="#312e81"/>
+  <g fill="#64748b"><rect x="110" y="110" width="48" height="155"/><rect x="230" y="75" width="48" height="180"/><rect x="350" y="120" width="48" height="145"/><path d="M80 110h110l-20-25h-70ZM200 75h110l-20-25h-70ZM320 120h110l-20-25h-70Z"/></g>
+  <path d="M470 210l45-45 45 45-45 45Z" fill="none" stroke="#a5f3fc" stroke-width="8"/>
+</svg>

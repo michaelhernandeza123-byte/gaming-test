@@ -1,0 +1,3098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shape Jumper</title>
+  <script src="../vendor/phaser-3.80.1.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      color: #f8fafc;
+      background: #0f172a;
+    }
+
+    main {
+      width: min(100%, 840px);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: #cbd5e1;
+    }
+
+    #setup-screen {
+      padding: 24px;
+      border: 2px solid #475569;
+      border-radius: 12px;
+      background: #1e293b;
+    }
+
+    button,
+    .file-button {
+      display: inline-block;
+      margin: 4px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 7px;
+      font: inherit;
+      font-weight: bold;
+      color: #0f172a;
+      background: #e2e8f0;
+      cursor: pointer;
+    }
+
+    button:hover,
+    .file-button:hover {
+      background: #ffffff;
+    }
+
+    #start-button {
+      color: #ffffff;
+      background: #16a34a;
+    }
+
+    #start-button:hover {
+      background: #22c55e;
+    }
+
+    .image-file {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    #file-status {
+      min-height: 22px;
+      margin: 12px 0 4px;
+      color: #a7f3d0;
+    }
+
+    .file-error {
+      min-height: 22px;
+      margin: 4px 0 12px;
+      color: #fca5a5;
+      font-weight: bold;
+    }
+
+    .setup-group + .setup-group {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #475569;
+    }
+
+    .setup-group h2,
+    .control-group h3 {
+      margin: 0 0 8px;
+    }
+
+    .control-group {
+      display: inline-block;
+      margin: 0 14px;
+      vertical-align: top;
+    }
+
+    .control-group h3 {
+      font-size: 16px;
+    }
+
+    #game-controls {
+      display: none;
+      margin-bottom: 12px;
+    }
+
+    #objective-display {
+      margin: 0 0 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: #f8fafc;
+      font-weight: bold;
+      background: #1e293b;
+    }
+
+    #game-container {
+      display: none;
+      overflow: hidden;
+      border: 4px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 18px 50px rgb(0 0 0 / 35%);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    #dialogue-panel {
+      margin-top: 16px;
+      padding: 22px;
+      border: 3px solid #a78bfa;
+      border-radius: 12px;
+      text-align: left;
+      background: #1e1b4b;
+    }
+
+    #dialogue-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    #dialogue-image {
+      flex: 0 0 72px;
+      width: 72px;
+      height: 72px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+    }
+
+    #dialogue-name,
+    #dialogue-text {
+      margin: 0;
+    }
+
+    #dialogue-choices button {
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+
+    #new-story-confirmation {
+      max-width: 520px;
+      padding: 24px;
+      border: 3px solid #a78bfa;
+      border-radius: 12px;
+      color: #f8fafc;
+      background: #1e1b4b;
+    }
+
+    #new-story-confirmation::backdrop {
+      background: rgb(15 23 42 / 75%);
+    }
+
+    #how-to-play-dialog {
+      width: min(92vw, 520px);
+      padding: 26px;
+      border: 3px solid #60a5fa;
+      border-radius: 12px;
+      color: #f8fafc;
+      background: #172554;
+    }
+
+    #how-to-play-dialog::backdrop {
+      background: rgb(15 23 42 / 78%);
+    }
+
+    #how-to-play-dialog h2 {
+      margin-top: 0;
+    }
+
+    #how-to-play-controls {
+      margin: 20px auto;
+      padding-left: 24px;
+      text-align: left;
+    }
+
+    #how-to-play-controls li {
+      margin: 10px 0;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a href="../index.html" style="display: inline-block; margin-bottom: 18px; color: inherit;">Back to Bespoke Games</a>
+    <h1 id="game-title">Shape Jumper</h1>
+    <p>Choose any optional images, then review the controls before your adventure begins.</p>
+
+    <section id="setup-screen">
+      <section id="request-message" hidden style="margin-bottom: 18px; padding: 14px; background: #7f1d1d; border-radius: 8px;">
+        <p id="request-message-text"></p>
+        <a href="../index.html" style="color: inherit; font-weight: bold;">Return to the launcher</a>
+      </section>
+      <p id="request-summary" hidden style="color: #a7f3d0;"></p>
+      <p id="generated-title" hidden style="font-size: 1.25rem; font-weight: bold; color: #fef3c7;"></p>
+      <p id="prompt-pace" hidden></p>
+
+      <div class="setup-group">
+        <h2>Choose a background</h2>
+        <p>Select a PNG, JPEG, or WebP image up to 5 MB.</p>
+
+        <label class="file-button" for="background-file">Choose image</label>
+        <input
+          id="background-file"
+          class="image-file background-file"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+        >
+        <button id="default-button" type="button">Use default background</button>
+
+        <p id="file-status" aria-live="polite">Using the default background.</p>
+        <p class="file-error background-error" role="alert"></p>
+      </div>
+
+      <div class="setup-group">
+        <h2>Choose a player image</h2>
+        <p>Select a PNG, JPEG, or WebP image up to 5 MB.</p>
+
+        <label class="file-button" for="player-file">Choose image</label>
+        <input
+          id="player-file"
+          class="image-file player-file"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+        >
+        <button id="default-player-button" type="button">Use default player</button>
+
+        <p id="player-file-status" aria-live="polite">Using the default player.</p>
+        <p class="file-error player-error" role="alert"></p>
+      </div>
+
+      <div id="npc-upload-group" class="setup-group" hidden>
+        <h2>Choose an NPC image</h2>
+        <p>Optionally replace the NPC's default color with a PNG, JPEG, or WebP image up to 5 MB.</p>
+
+        <label class="file-button" for="npc-image-file">Choose image</label>
+        <input
+          id="npc-image-file"
+          class="image-file"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+        >
+        <button id="default-npc-button" type="button">Use default NPC</button>
+
+        <p id="npc-file-status" aria-live="polite">Using the NPC's default color.</p>
+        <p id="npc-file-error" class="file-error" role="alert"></p>
+      </div>
+
+      <button id="start-button" type="button">Start Game</button>
+    </section>
+
+    <div id="game-controls">
+      <div class="control-group">
+        <h3>Background</h3>
+        <label class="file-button" for="replacement-file">Replace image</label>
+        <input
+          id="replacement-file"
+          class="image-file background-file"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+        >
+        <button id="game-default-button" type="button">Use default background</button>
+        <p class="file-error background-error" role="alert"></p>
+      </div>
+
+      <div class="control-group">
+        <h3>Player</h3>
+        <label class="file-button" for="replacement-player-file">Replace image</label>
+        <input
+          id="replacement-player-file"
+          class="image-file player-file"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+        >
+        <button id="game-default-player-button" type="button">Use default player</button>
+        <p class="file-error player-error" role="alert"></p>
+      </div>
+
+      <div class="control-group">
+        <h3>Level</h3>
+        <button id="how-to-play-button" type="button">How to Play</button>
+        <button id="retry-checkpoint-button" type="button">Retry From Checkpoint</button>
+        <button id="start-new-story-button" type="button">Start New Story</button>
+      </div>
+    </div>
+    <p id="objective-display" hidden></p>
+    <div id="game-container"></div>
+
+    <section id="dialogue-panel" hidden aria-live="polite">
+      <div id="dialogue-header">
+        <div id="dialogue-image" role="img"></div>
+        <h2 id="dialogue-name"></h2>
+      </div>
+      <p id="dialogue-text"></p>
+      <div id="dialogue-choices"></div>
+    </section>
+
+    <dialog id="how-to-play-dialog" aria-labelledby="how-to-play-title">
+      <h2 id="how-to-play-title">How to Play</h2>
+      <p id="how-to-play-template-name"></p>
+      <ul id="how-to-play-controls"></ul>
+      <button id="start-adventure-button" type="button" autofocus>Start Adventure</button>
+    </dialog>
+
+    <dialog id="new-story-confirmation" aria-labelledby="new-story-confirmation-title">
+      <h2 id="new-story-confirmation-title">Start a new story?</h2>
+      <p>
+        This clears dialogue decisions, inventory, objectives, unlocked routes,
+        defeated enemies, checkpoints, and score. Uploaded images and user settings
+        will be preserved.
+      </p>
+      <button id="confirm-new-story-button" type="button">Start New Story</button>
+      <button id="cancel-new-story-button" type="button">Cancel</button>
+    </dialog>
+  </main>
+
+  <script src="../shared/bespoke-game-request.js"></script>
+  <script src="../shared/bespoke-story-state.js"></script>
+  <script>
+    // Each level uses the same game engine with different colors and platform layouts.
+    const defaultLevelConfig = {
+      storyId: "default-v1",
+      initialObjective: "Reach the collectible.",
+      backgroundColor: "#38bdf8",
+      playerColor: 0x000000,
+      playerSpeed: 220,
+      jumpStrength: 480,
+      mechanics: {
+        shooting: {
+          enabled: false,
+          fireKey: "F",
+          cooldown: 350,
+          projectileSpeed: 520,
+          lifetime: 1200,
+          color: 0xfde047,
+          damage: 1
+        }
+      },
+      enemies: [],
+
+      // The collectible's color and starting position.
+      collectible: {
+        color: 0xfacc15,
+        x: 660,
+        y: 120
+      },
+
+      // Each platform has a center position, size, and color.
+      platforms: [
+        { x: 400, y: 425, width: 800, height: 50, color: 0x166534 },
+        { x: 180, y: 330, width: 150, height: 24, color: 0x854d0e },
+        { x: 420, y: 250, width: 150, height: 24, color: 0x854d0e },
+        { x: 660, y: 165, width: 150, height: 24, color: 0x854d0e }
+      ],
+      npcs: [],
+      storyGraph: null,
+      storyWorld: null
+    };
+
+    const iceCastleLevelConfig = {
+      storyId: "ice-castle-v1",
+      initialObjective: "Speak with the Frozen Sentinel.",
+      backgroundColor: "#93c5fd",
+      playerColor: 0x000000,
+      playerSpeed: 220,
+      jumpStrength: 480,
+      mechanics: {
+        shooting: {
+          enabled: false,
+          fireKey: "F",
+          cooldown: 350,
+          projectileSpeed: 520,
+          lifetime: 1200,
+          color: 0xfde047,
+          damage: 1
+        }
+      },
+      enemies: [],
+      world: {
+        physicsBounds: { x: 0, y: 0, width: 1600, height: 650 },
+        cameraBounds: { x: 0, y: 0, width: 1600, height: 450 },
+        start: { x: 70, y: 360 },
+        fallResetY: 555,
+        smoothFollow: { lerpX: 0.09, lerpY: 0.09 }
+      },
+      sections: [
+        { id: "ice-courtyard", label: "FROZEN COURTYARD", x: 0, width: 800, color: 0x1e40af, labelColor: "#eff6ff" },
+        { id: "ice-routes", label: "GATE AND TUNNEL ROUTES", x: 800, width: 800, color: 0x164e63, labelColor: "#cffafe" }
+      ],
+      checkpoints: [
+        {
+          id: "sentinel-choice-exit",
+          sectionId: "ice-courtyard",
+          x: 670,
+          y: 365,
+          activation: { x: 620, y: 0, width: 80, height: 450 },
+          requiredAnyRoutes: ["upperGate", "lowerTunnel"],
+          color: 0xf59e0b
+        }
+      ],
+      collectible: {
+        color: 0xe0f2fe,
+        x: 1500,
+        y: 130
+      },
+      platforms: [
+        { id: "ice-start-floor", sectionId: "ice-courtyard", x: 350, y: 425, width: 700, height: 50, color: 0xdbeafe },
+        { id: "ice-start-step", sectionId: "ice-courtyard", x: 220, y: 335, width: 150, height: 20, color: 0xeff6ff },
+        { id: "ice-choice-ledge", sectionId: "ice-courtyard", x: 520, y: 320, width: 150, height: 20, color: 0xbfdbfe },
+        { id: "ice-final-floor", sectionId: "ice-routes", x: 1300, y: 425, width: 600, height: 50, color: 0xbae6fd },
+        { id: "ice-final-step-1", sectionId: "ice-routes", x: 1120, y: 330, width: 150, height: 20, color: 0xe0f2fe },
+        { id: "ice-final-step-2", sectionId: "ice-routes", x: 1320, y: 250, width: 150, height: 20, color: 0xbfdbfe },
+        { id: "ice-final-step-3", sectionId: "ice-routes", x: 1500, y: 175, width: 150, height: 20, color: 0xe0f2fe }
+      ],
+      npcs: [
+        {
+          id: "frozen-sentinel",
+          sectionId: "ice-courtyard",
+          name: "Frozen Sentinel",
+          x: 540,
+          y: 378,
+          defaultColor: 0x67e8f9,
+          uploadedImage: null,
+          uploadAssetId: null,
+          storyNodeId: "sentinel-intro",
+          completedStates: [
+            { flag: "relitBeacon", nodeId: "sentinel-beacon", buttonText: "Continue" },
+            { flag: "brokeIceSeal", nodeId: "sentinel-tunnel", buttonText: "Continue" }
+          ]
+        }
+      ],
+      storyGraph: {
+        startNodeId: "sentinel-intro",
+        nodes: [
+          {
+            id: "sentinel-intro",
+            speaker: "Frozen Sentinel",
+            dialogue: "The castle is sealed by ancient ice. Which path will you open?",
+            choices: [
+              {
+                id: "relight-beacon",
+                text: "Relight the beacon.",
+                nextNodeId: "sentinel-beacon",
+                effects: [
+                  { type: "setFlag", flag: "relitBeacon", value: true },
+                  { type: "addInventory", item: "emberSigil" },
+                  { type: "setObjective", objective: "Climb through the opened upper gate and reach the beacon summit." },
+                  { type: "unlockRoute", routeId: "upperGate" }
+                ]
+              },
+              {
+                id: "break-ice-seal",
+                text: "Break the ice seal.",
+                nextNodeId: "sentinel-tunnel",
+                effects: [
+                  { type: "setFlag", flag: "brokeIceSeal", value: true },
+                  { type: "setObjective", objective: "Cross the opened lower tunnel and reach the far tower." },
+                  { type: "unlockRoute", routeId: "lowerTunnel" }
+                ]
+              }
+            ]
+          },
+          {
+            id: "sentinel-beacon",
+            speaker: "Frozen Sentinel",
+            dialogue: "The ember sigil answers you. The upper gate is open.",
+            choices: [
+              { id: "continue-upper", text: "Take the upper route.", nextNodeId: null, effects: [] }
+            ]
+          },
+          {
+            id: "sentinel-tunnel",
+            speaker: "Frozen Sentinel",
+            dialogue: "The ice seal has shattered. The lower tunnel is open.",
+            choices: [
+              { id: "continue-lower", text: "Enter the lower tunnel.", nextNodeId: null, effects: [] }
+            ]
+          }
+        ]
+      },
+      storyWorld: {
+        barriers: [
+          { id: "ice-upper-gate", sectionId: "ice-routes", requiredRouteId: "upperGate", x: 950, y: 220, width: 30, height: 180, color: 0x2563eb },
+          { id: "ice-lower-seal", sectionId: "ice-routes", requiredRouteId: "lowerTunnel", x: 950, y: 365, width: 30, height: 70, color: 0x0ea5e9 }
+        ],
+        routePlatforms: [
+          { id: "ice-upper-1", requiredRouteId: "upperGate", x: 760, y: 320, width: 120, height: 20, color: 0xfef3c7 },
+          { id: "ice-upper-2", requiredRouteId: "upperGate", x: 880, y: 250, width: 120, height: 20, color: 0xfde68a },
+          { id: "ice-upper-3", requiredRouteId: "upperGate", x: 1000, y: 320, width: 120, height: 20, color: 0xfef3c7 },
+          { id: "ice-lower-bridge", requiredRouteId: "lowerTunnel", x: 850, y: 410, width: 300, height: 20, color: 0x7dd3fc }
+        ]
+      },
+      requiredJumps: [
+        { from: "ice-start-floor", to: "ice-upper-1", requiredRouteId: "upperGate" },
+        { from: "ice-upper-1", to: "ice-upper-2", requiredRouteId: "upperGate" },
+        { from: "ice-upper-2", to: "ice-upper-3", requiredRouteId: "upperGate" },
+        { from: "ice-upper-3", to: "ice-final-floor", requiredRouteId: "upperGate" },
+        { from: "ice-start-floor", to: "ice-lower-bridge", requiredRouteId: "lowerTunnel" },
+        { from: "ice-lower-bridge", to: "ice-final-floor", requiredRouteId: "lowerTunnel" },
+        { from: "ice-final-floor", to: "ice-final-step-1" },
+        { from: "ice-final-step-1", to: "ice-final-step-2" },
+        { from: "ice-final-step-2", to: "ice-final-step-3" }
+      ],
+    };
+
+    const alienRuinsLevelConfig = {
+      storyId: "alien-ruins-v1",
+      initialObjective: "Find a way through the Alien Ruins.",
+      backgroundColor: "#312e81",
+      playerColor: 0x000000,
+      playerSpeed: 220,
+      jumpStrength: 480,
+
+      // Shooting is optional configuration and is enabled only for Alien Ruins.
+      mechanics: {
+        shooting: {
+          enabled: true,
+          fireKey: "F",
+          cooldown: 350,
+          projectileSpeed: 520,
+          lifetime: 1200,
+          color: 0xfde047,
+          damage: 1
+        }
+      },
+
+      // The single stationary enemy and its defeat result are configuration data.
+      enemies: [
+        {
+          id: "security-drone",
+          name: "Security Drone",
+          type: "stationary",
+          sectionId: "sealed-vault",
+          x: 2080,
+          y: 376,
+          width: 48,
+          height: 32,
+          color: 0xef4444,
+          disabledColor: 0x64748b,
+          health: 3,
+          disabledLabel: "SECURITY DRONE DISABLED",
+          objectiveAfterDefeat: "Security drone disabled. Reach the open exit.",
+          unlockRouteId: "securityExit",
+          offense: {
+            enabled: true,
+            cooldown: 2600,
+            projectileSpeed: 160,
+            lifetime: 3500,
+            range: 420,
+            color: 0xfb7185,
+            firstAttackWarning: {
+              duration: 1500,
+              text: "WARNING: Security drone targeting. Move or take cover!"
+            },
+            hitEffect: "retryCheckpoint"
+          }
+        }
+      ],
+
+      // Alien Ruins alone expands the physics world beyond the 800 by 450 canvas.
+      world: {
+        physicsBounds: { x: 0, y: 0, width: 2400, height: 650 },
+        cameraBounds: { x: 0, y: 0, width: 2400, height: 450 },
+        start: { x: 70, y: 360 },
+        fallResetY: 555,
+        smoothFollow: { lerpX: 0.09, lerpY: 0.09 }
+      },
+
+      // Section colors, positions, and labels are visual configuration data.
+      sections: [
+        { id: "landing", label: "STARTING AREA", x: 0, width: 800, color: 0x172554, labelColor: "#bfdbfe" },
+        { id: "robot-chamber", label: "ROBOT CHAMBER", x: 800, width: 800, color: 0x3b0764, labelColor: "#e9d5ff" },
+        { id: "sealed-vault", label: "FINAL ROUTE / DOOR AREA", x: 1600, width: 800, color: 0x052e2b, labelColor: "#99f6e4" }
+      ],
+
+      // A checkpoint activates after the robot chamber and only moves the player.
+      checkpoints: [
+        {
+          id: "robot-chamber-exit",
+          sectionId: "robot-chamber",
+          x: 1500,
+          y: 365,
+          activation: { x: 1420, y: 0, width: 150, height: 450 },
+          color: 0xfacc15
+        }
+      ],
+
+      collectible: {
+        color: 0x4ade80,
+        x: 2280,
+        y: 150
+      },
+      platforms: [
+        { id: "landing-floor", sectionId: "landing", x: 350, y: 425, width: 700, height: 50, color: 0x1e3a8a },
+        { id: "landing-step-1", sectionId: "landing", x: 190, y: 335, width: 150, height: 20, color: 0x2563eb },
+        { id: "landing-step-2", sectionId: "landing", x: 430, y: 275, width: 150, height: 20, color: 0x3b82f6 },
+        { id: "landing-transition", sectionId: "landing", x: 745, y: 350, width: 130, height: 20, color: 0x60a5fa },
+
+        { id: "chamber-floor", sectionId: "robot-chamber", x: 1175, y: 425, width: 750, height: 50, color: 0x581c87 },
+        { id: "chamber-step-1", sectionId: "robot-chamber", x: 900, y: 335, width: 150, height: 20, color: 0x7e22ce },
+        { id: "chamber-step-2", sectionId: "robot-chamber", x: 1120, y: 275, width: 160, height: 20, color: 0x9333ea },
+        { id: "chamber-step-3", sectionId: "robot-chamber", x: 1330, y: 335, width: 150, height: 20, color: 0xa855f7 },
+
+        { id: "vault-floor", sectionId: "sealed-vault", x: 2040, y: 425, width: 720, height: 50, color: 0x115e59 },
+        { id: "vault-step-1", sectionId: "sealed-vault", x: 1900, y: 335, width: 150, height: 20, color: 0x0f766e },
+        { id: "vault-step-2", sectionId: "sealed-vault", x: 2090, y: 265, width: 150, height: 20, color: 0x0d9488 },
+        { id: "vault-step-3", sectionId: "sealed-vault", x: 2280, y: 195, width: 150, height: 20, color: 0x14b8a6 }
+      ],
+      // NPC encounters are data-driven and do not add physics bodies.
+      npcs: [
+        {
+          id: "damaged-robot",
+          sectionId: "robot-chamber",
+          name: "Damaged Robot",
+          x: 1030,
+          y: 378,
+          defaultColor: 0x94a3b8,
+          uploadedImage: null,
+          uploadAssetId: "npc-damaged-robot",
+          nameLabel: {
+            visible: true,
+            offsetY: -58,
+            color: "#e2e8f0",
+            backgroundColor: "#334155"
+          },
+          storyNodeId: "robot-intro",
+          completedStates: [
+            { flag: "helpedRobot", nodeId: "robot-helped", buttonText: "Close / Continue" },
+            { flag: "ignoredRobot", nodeId: "robot-ignored", buttonText: "Continue" }
+          ]
+        }
+      ],
+
+      // Dialogue content and safe gameplay effects live in this configuration.
+      storyGraph: {
+        startNodeId: "robot-intro",
+        nodes: [
+          {
+            id: "robot-intro",
+            speaker: "Damaged Robot",
+            dialogue: "My power cell is failing. Can you help me before the ruins go dark?",
+            choices: [
+              {
+                id: "repair",
+                text: "Repair the robot's power cell.",
+                nextNodeId: "robot-helped",
+                effects: [
+                  { type: "setFlag", flag: "helpedRobot", value: true },
+                  { type: "addInventory", item: "accessKey" },
+                  { type: "setObjective", objective: "Use the access key to pass through the sealed door." },
+                  { type: "unlockRoute", routeId: "sealedDoor" }
+                ]
+              },
+              {
+                id: "leave",
+                text: "Leave the robot to conserve your supplies.",
+                nextNodeId: "robot-ignored",
+                effects: [
+                  { type: "setFlag", flag: "ignoredRobot", value: true },
+                  { type: "setObjective", objective: "Climb the newly opened alternate route." },
+                  { type: "unlockRoute", routeId: "alternateRoute" }
+                ]
+              }
+            ]
+          },
+          {
+            id: "robot-helped",
+            speaker: "Damaged Robot",
+            dialogue: "Power restored. Take this access key; the sealed door is open now.",
+            choices: [
+              { id: "continue", text: "Continue through the sealed door.", nextNodeId: null, effects: [] }
+            ]
+          },
+          {
+            id: "robot-ignored",
+            speaker: "Damaged Robot",
+            dialogue: "Understood. I have opened an alternate climbing route instead.",
+            choices: [
+              { id: "continue", text: "Take the alternate route.", nextNodeId: null, effects: [] }
+            ]
+          }
+        ]
+      },
+
+      // Story routes change physics only when their validated unlock effect is saved.
+      storyWorld: {
+        barriers: [
+          {
+            id: "alien-sealed-door",
+            sectionId: "sealed-vault",
+            requiredRouteId: "sealedDoor",
+            x: 1760,
+            y: 315,
+            width: 34,
+            height: 220,
+            color: 0xf97316,
+            lockedHint: {
+              distance: 115,
+              text: "The sealed barrier is locked. Check on the damaged robot in the robot chamber."
+            }
+          },
+          { id: "alien-security-barrier", sectionId: "sealed-vault", requiredRouteId: "securityExit", x: 2180, y: 270, width: 34, height: 260, color: 0xdc2626 }
+        ],
+        routePlatforms: [
+          { id: "alternate-1", requiredRouteId: "alternateRoute", x: 1530, y: 340, width: 130, height: 18, color: 0x22d3ee },
+          { id: "alternate-2", requiredRouteId: "alternateRoute", x: 1640, y: 275, width: 120, height: 18, color: 0x22d3ee },
+          { id: "alternate-3", requiredRouteId: "alternateRoute", x: 1740, y: 190, width: 120, height: 18, color: 0x67e8f9 },
+          { id: "alternate-4", requiredRouteId: "alternateRoute", x: 1850, y: 275, width: 120, height: 18, color: 0x22d3ee },
+          { id: "alternate-5", requiredRouteId: "alternateRoute", x: 1960, y: 340, width: 130, height: 18, color: 0x22d3ee }
+        ]
+      },
+
+      // These are the jumps required to finish each possible route. Validation
+      // checks them against this level's speed, jump strength, and gravity.
+      requiredJumps: [
+        { from: "landing-floor", to: "landing-transition" },
+        { from: "landing-transition", to: "chamber-floor" },
+        { from: "chamber-floor", to: "vault-floor", requiredRouteId: "sealedDoor" },
+        { from: "chamber-floor", to: "alternate-1", requiredRouteId: "alternateRoute" },
+        { from: "alternate-1", to: "alternate-2", requiredRouteId: "alternateRoute" },
+        { from: "alternate-2", to: "alternate-3", requiredRouteId: "alternateRoute" },
+        { from: "alternate-3", to: "alternate-4", requiredRouteId: "alternateRoute" },
+        { from: "alternate-4", to: "alternate-5", requiredRouteId: "alternateRoute" },
+        { from: "alternate-5", to: "vault-floor", requiredRouteId: "alternateRoute" },
+        { from: "vault-floor", to: "vault-step-1" },
+        { from: "vault-step-1", to: "vault-step-2" },
+        { from: "vault-step-2", to: "vault-step-3" }
+      ]
+    };
+
+    const TEMPLATE_SCHEMA_VERSION = 1;
+    const ALLOWED_TEMPLATE_MECHANICS = [
+      "platforming",
+      "uploads",
+      "dialogue",
+      "checkpoints",
+      "shooting"
+    ];
+
+    // The registry is the only list of playable templates. Each entry points
+    // to an existing configuration; the shared engine remains unchanged.
+    const templateRegistry = {
+      "default": {
+        id: "default",
+        schemaVersion: TEMPLATE_SCHEMA_VERSION,
+        displayName: "Shape Jumper",
+        recognizedKeywords: [],
+        allowedMechanics: ["platforming", "uploads"],
+        configuration: defaultLevelConfig,
+        startingObjective: "Reach the collectible."
+      },
+      "ice-castle": {
+        id: "ice-castle",
+        schemaVersion: TEMPLATE_SCHEMA_VERSION,
+        displayName: "Ice Castle",
+        recognizedKeywords: ["ice", "frozen", "castle"],
+        allowedMechanics: ["platforming", "uploads", "dialogue", "checkpoints"],
+        configuration: iceCastleLevelConfig,
+        startingObjective: "Speak with the Frozen Sentinel."
+      },
+      "alien-ruins": {
+        id: "alien-ruins",
+        schemaVersion: TEMPLATE_SCHEMA_VERSION,
+        displayName: "Alien Ruins",
+        recognizedKeywords: ["alien", "space", "ruins"],
+        allowedMechanics: ["platforming", "uploads", "dialogue", "checkpoints", "shooting"],
+        configuration: alienRuinsLevelConfig,
+        startingObjective: "Find a way through the Alien Ruins.",
+        // Explicit preferences affect this run only; no player profile is recorded.
+        // Both options use the same existing combat engine and validation.
+        combatPromptProfiles: [
+          {
+            keywords: ["relaxed"],
+            summary: "Relaxed drone pace: longer warning, slower shots, and more time between attacks. Platforming and story choices are unchanged.",
+            cooldown: 3000,
+            projectileSpeed: 140,
+            warningDuration: 2200
+          },
+          {
+            keywords: ["challenge", "challenging"],
+            summary: "Challenge drone pace: faster enemy shots and less time between attacks, with the standard first-attack warning. Platforming and story choices are unchanged.",
+            cooldown: 1400,
+            projectileSpeed: 240,
+            warningDuration: 1500
+          }
+        ]
+      }
+    };
+    let selectedTemplate = templateRegistry.default;
+    let levelConfig = defaultLevelConfig;
+
+    const config = {
+      type: Phaser.AUTO,
+      width: 800,
+      height: 450,
+      parent: "game-container",
+      // A transparent canvas lets the chosen image show behind the level.
+      transparent: true,
+      physics: {
+        default: "arcade",
+        arcade: {
+          gravity: { y: 700 },
+          debug: false
+        }
+      },
+      scene: { create, update }
+    };
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const SUPPORTED_FILE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+    const PLAYER_WIDTH = 32;
+    const PLAYER_HEIGHT = 44;
+    const NPC_WIDTH = 32;
+    const NPC_HEIGHT = 44;
+    const NPC_INTERACTION_DISTANCE = 75;
+    const USER_SETTINGS_KEY = "bespokePlatformerUserSettings";
+    const USER_SETTINGS_SCHEMA_VERSION = 1;
+    const ASSET_DATABASE_NAME = "bespokePlatformerAssets";
+    const ASSET_STORE_NAME = "assets";
+
+    // These definitions are used by both Phaser and the How to Play overlay,
+    // so the displayed instructions always match the real control keys.
+    const CONTROL_BINDINGS = {
+      moveLeft: {
+        mechanic: "platforming",
+        action: "Move left",
+        keyNames: ["LEFT", "A"]
+      },
+      moveRight: {
+        mechanic: "platforming",
+        action: "Move right",
+        keyNames: ["RIGHT", "D"]
+      },
+      jump: {
+        mechanic: "platforming",
+        action: "Jump",
+        keyNames: ["UP", "W", "SPACE"]
+      },
+      interact: {
+        mechanic: "dialogue",
+        action: "Talk to a nearby character",
+        keyNames: ["E"]
+      },
+      shoot: {
+        mechanic: "shooting",
+        action: "Fire",
+        getKeyNames: function () {
+          return [levelConfig.mechanics.shooting.fireKey.toUpperCase()];
+        }
+      }
+    };
+    const CONTROL_KEY_LABELS = {
+      LEFT: "Left Arrow",
+      RIGHT: "Right Arrow",
+      UP: "Up Arrow",
+      SPACE: "Space"
+    };
+    const gameContainer = document.getElementById("game-container");
+    const setupScreen = document.getElementById("setup-screen");
+    const gameControls = document.getElementById("game-controls");
+    const gameTitle = document.getElementById("game-title");
+    const generatedTitle = document.getElementById("generated-title");
+    const backgroundFileInputs = document.querySelectorAll(".background-file");
+    const playerFileInputs = document.querySelectorAll(".player-file");
+    const fileStatus = document.getElementById("file-status");
+    const backgroundErrors = document.querySelectorAll(".background-error");
+    const playerFileStatus = document.getElementById("player-file-status");
+    const playerErrors = document.querySelectorAll(".player-error");
+    const npcUploadGroup = document.getElementById("npc-upload-group");
+    const npcImageFile = document.getElementById("npc-image-file");
+    const npcFileStatus = document.getElementById("npc-file-status");
+    const npcFileError = document.getElementById("npc-file-error");
+    const dialoguePanel = document.getElementById("dialogue-panel");
+    const dialogueImage = document.getElementById("dialogue-image");
+    const dialogueName = document.getElementById("dialogue-name");
+    const dialogueText = document.getElementById("dialogue-text");
+    const dialogueChoices = document.getElementById("dialogue-choices");
+    const objectiveDisplay = document.getElementById("objective-display");
+    const startButton = document.getElementById("start-button");
+    const howToPlayButton = document.getElementById("how-to-play-button");
+    const howToPlayDialog = document.getElementById("how-to-play-dialog");
+    const howToPlayTemplateName = document.getElementById("how-to-play-template-name");
+    const howToPlayControls = document.getElementById("how-to-play-controls");
+    const startAdventureButton = document.getElementById("start-adventure-button");
+    const retryCheckpointButton = document.getElementById("retry-checkpoint-button");
+    const startNewStoryButton = document.getElementById("start-new-story-button");
+    const newStoryConfirmation = document.getElementById("new-story-confirmation");
+    const confirmNewStoryButton = document.getElementById("confirm-new-story-button");
+    const cancelNewStoryButton = document.getElementById("cancel-new-story-button");
+    let selectedBackground = null;
+    let selectedPlayerImage = null;
+    let game;
+    let gameScene;
+    let player;
+    let playerVisual;
+    let playerTextureNumber = 0;
+    let platforms;
+    let storyBarriers = [];
+    let storyRoutePlatforms = [];
+    let projectiles;
+    let enemyProjectiles;
+    let enemySprites = [];
+    let enemyWarningText;
+    let controlKeys = {};
+    let lastProjectileTime = -Infinity;
+    let playerFacing = 1;
+    let playerHitPending = false;
+    let collectible;
+    let npcSprites = [];
+    let interactionText;
+    let activeNpc = null;
+    let dialogueOpen = false;
+    let dialogueOpenedAt = 0;
+    let scoreText;
+    let winText;
+    let score = 0;
+    let validatedStoryGraph = null;
+    let gameState = null;
+    let currentRequest = null;
+    let userSettings = loadUserSettings();
+    let validatedLevelConfig = true;
+    let activeCheckpoint = null;
+    let checkpointMarkers = [];
+
+    // Validate the registry fields before any prompt can select a template.
+    function validateTemplateRegistry(registry) {
+      const errors = [];
+      if (!registry || typeof registry !== "object" || Array.isArray(registry)) {
+        return { ok: false, errors: ["The template registry is missing or malformed."] };
+      }
+      const seenKeywords = new Set();
+      const entries = Object.values(registry);
+
+      if (entries.length !== 3 || !registry.default || !registry["ice-castle"] || !registry["alien-ruins"]) {
+        errors.push("The template registry must contain only the three supported templates.");
+      }
+
+      entries.forEach(function (template) {
+        if (!template || typeof template.id !== "string" || registry[template.id] !== template) {
+          errors.push("Every template needs a stable registry ID.");
+          return;
+        }
+        if (template.schemaVersion !== TEMPLATE_SCHEMA_VERSION) {
+          errors.push("Template " + template.id + " uses an unsupported schema version.");
+        }
+        if (typeof template.displayName !== "string" || !template.displayName.trim()) {
+          errors.push("Template " + template.id + " needs a display name.");
+        }
+        if (!Array.isArray(template.recognizedKeywords) ||
+            template.recognizedKeywords.some(function (keyword) {
+              return typeof keyword !== "string" || !keyword || keyword !== keyword.toLowerCase();
+            })) {
+          errors.push("Template " + template.id + " has invalid recognized keywords.");
+        }
+        (template.recognizedKeywords || []).forEach(function (keyword) {
+          if (seenKeywords.has(keyword)) errors.push("Recognized keywords must belong to only one template.");
+          seenKeywords.add(keyword);
+        });
+        const hasAllowedMechanics = Array.isArray(template.allowedMechanics);
+        if (!hasAllowedMechanics ||
+            template.allowedMechanics.some(function (mechanic) {
+              return !ALLOWED_TEMPLATE_MECHANICS.includes(mechanic);
+            })) {
+          errors.push("Template " + template.id + " has invalid allowed mechanics.");
+        }
+        const hasConfiguration = template.configuration && typeof template.configuration === "object";
+        if (!hasConfiguration) {
+          errors.push("Template " + template.id + " needs a configuration reference.");
+        }
+        if (typeof template.startingObjective !== "string" || !template.startingObjective.trim() ||
+            !hasConfiguration || template.configuration.initialObjective !== template.startingObjective) {
+          errors.push("Template " + template.id + " has an invalid starting objective.");
+        }
+        if (hasConfiguration && hasAllowedMechanics) {
+          const permitsShooting = template.allowedMechanics.includes("shooting");
+          const enablesShooting = Boolean(
+            template.configuration.mechanics &&
+            template.configuration.mechanics.shooting &&
+            template.configuration.mechanics.shooting.enabled
+          );
+          const permitsDialogue = template.allowedMechanics.includes("dialogue");
+          const hasDialogue = Boolean(template.configuration.storyGraph);
+          const permitsCheckpoints = template.allowedMechanics.includes("checkpoints");
+          const hasCheckpoints = Array.isArray(template.configuration.checkpoints) &&
+            template.configuration.checkpoints.length > 0;
+
+          if (permitsShooting !== enablesShooting || permitsDialogue !== hasDialogue ||
+              permitsCheckpoints !== hasCheckpoints) {
+            errors.push("Template " + template.id + " does not match its allowed mechanics.");
+          }
+
+          const configurationResult = validateLevelConfigData(template.configuration);
+          if (!configurationResult.ok) {
+            errors.push("Template " + template.id + " has an invalid game configuration.");
+          }
+        }
+      });
+
+      return { ok: errors.length === 0, errors: errors };
+    }
+
+    // Score whole recognized words. A tie, no match, or malformed prompt uses
+    // the known-good default instead of exposing configuration questions.
+    function selectTemplate(prompt) {
+      const registryResult = validateTemplateRegistry(templateRegistry);
+      if (!registryResult.ok) {
+        console.warn("[Platformer] Invalid template registry:", registryResult.errors);
+        return templateRegistry.default;
+      }
+
+      const words = new Set(
+        typeof prompt === "string"
+          ? (prompt.toLowerCase().match(/[a-z0-9]+/g) || [])
+          : []
+      );
+      let bestTemplate = templateRegistry.default;
+      let bestScore = 0;
+      let tied = false;
+
+      Object.values(templateRegistry).forEach(function (template) {
+        if (template.id === "default") return;
+        const score = template.recognizedKeywords.reduce(function (total, keyword) {
+          return total + (words.has(keyword) ? 1 : 0);
+        }, 0);
+
+        if (score > bestScore) {
+          bestTemplate = template;
+          bestScore = score;
+          tied = false;
+        } else if (score > 0 && score === bestScore) {
+          tied = true;
+        }
+      });
+
+      const selection = bestScore > 0 && !tied ? bestTemplate : templateRegistry.default;
+      const levelResult = validateLevelConfigData(selection.configuration);
+      if (!levelResult.ok) {
+        console.warn("[Platformer] Invalid selected template configuration:", levelResult.errors);
+        return templateRegistry.default;
+      }
+      return selection;
+    }
+
+    // Only these three bounded numbers may change. Invalid or unknown settings
+    // fall back to the original level, never to arbitrary prompt-supplied code.
+    function isValidCombatPromptSetting(setting) {
+      return Boolean(setting && typeof setting === "object" && !Array.isArray(setting) &&
+        Object.keys(setting).length === 5 &&
+        Object.keys(setting).every(function (key) {
+          return ["keywords", "summary", "cooldown", "projectileSpeed", "warningDuration"].includes(key);
+        }) && Array.isArray(setting.keywords) && setting.keywords.length > 0 &&
+        setting.keywords.length <= 10 && setting.keywords.every(function (keyword) {
+          return typeof keyword === "string" && /^[a-z]+$/.test(keyword);
+        }) && typeof setting.summary === "string" && setting.summary.trim().length > 0 &&
+        setting.summary.length <= 400 &&
+        Number.isFinite(setting.cooldown) && setting.cooldown >= 100 && setting.cooldown <= 10000 &&
+        Number.isFinite(setting.projectileSpeed) && setting.projectileSpeed >= 50 && setting.projectileSpeed <= 1000 &&
+        Number.isFinite(setting.warningDuration) && setting.warningDuration >= 100 && setting.warningDuration <= 10000);
+    }
+
+    // Build a per-request configuration without changing the registry defaults.
+    // Keep NPC objects shared with the existing uploaded-image restoration code.
+    function configurePromptPace(template, prompt) {
+      const original = template.configuration;
+      const settings = template.combatPromptProfiles;
+      const unchanged = { configuration: original, summary: "" };
+      if (settings === undefined || !template.allowedMechanics.includes("shooting")) return unchanged;
+      if (!Array.isArray(settings) || settings.length === 0 || settings.length > 4 ||
+          !settings.every(isValidCombatPromptSetting)) {
+        console.warn("[Platformer] Invalid combat prompt settings ignored.");
+        return unchanged;
+      }
+      const keywords = settings.flatMap(function (setting) { return setting.keywords; });
+      if (new Set(keywords).size !== keywords.length) {
+        console.warn("[Platformer] Duplicate combat prompt keywords ignored.");
+        return unchanged;
+      }
+      // Match whole words, not a guessed skill level. Conflicting requests use
+      // standard pace and explain the fallback instead of silently picking one.
+      const words = typeof prompt === "string" ? (prompt.toLowerCase().match(/[a-z0-9]+/g) || []) : [];
+      const matches = settings.filter(function (setting) {
+        return setting.keywords.some(function (keyword) { return words.includes(keyword); });
+      });
+      if (matches.length !== 1) {
+        unchanged.summary = matches.length > 1
+          ? 'Standard drone pace: conflicting pace words were found. Use just one preference in a new description.'
+          : 'Standard drone pace. In a new description, request one pace: ' + keywords.join(", ") + '.';
+        return unchanged;
+      }
+      const setting = matches[0];
+      const adjusted = {
+        ...original,
+        enemies: original.enemies.map(function (enemy) {
+          return {
+            ...enemy,
+            offense: {
+              ...enemy.offense,
+              cooldown: setting.cooldown,
+              projectileSpeed: setting.projectileSpeed,
+              firstAttackWarning: {
+                ...enemy.offense.firstAttackWarning,
+                duration: setting.warningDuration
+              }
+            }
+          };
+        })
+      };
+      // Run the existing world validator again before the engine sees the result.
+      if (!validateLevelConfigData(adjusted).ok) {
+        console.warn("[Platformer] Invalid prompt-adjusted configuration ignored.");
+        return unchanged;
+      }
+      return {
+        configuration: adjusted,
+        summary: setting.summary
+      };
+    }
+
+    function isFiniteNumber(value) {
+      return typeof value === "number" && Number.isFinite(value);
+    }
+
+    function hasValidRectangle(rectangle) {
+      return rectangle &&
+        isFiniteNumber(rectangle.x) &&
+        isFiniteNumber(rectangle.y) &&
+        isFiniteNumber(rectangle.width) && rectangle.width > 0 &&
+        isFiniteNumber(rectangle.height) && rectangle.height > 0;
+    }
+
+    function isPointInsideBounds(point, bounds) {
+      return point && bounds &&
+        isFiniteNumber(point.x) && isFiniteNumber(point.y) &&
+        point.x >= bounds.x && point.x <= bounds.x + bounds.width &&
+        point.y >= bounds.y && point.y <= bounds.y + bounds.height;
+    }
+
+    function isCenteredRectangleInsideBounds(rectangle, bounds) {
+      return hasValidRectangle(rectangle) && bounds &&
+        rectangle.x - rectangle.width / 2 >= bounds.x &&
+        rectangle.x + rectangle.width / 2 <= bounds.x + bounds.width &&
+        rectangle.y - rectangle.height / 2 >= bounds.y &&
+        rectangle.y + rectangle.height / 2 <= bounds.y + bounds.height;
+    }
+
+    function isTopLeftRectangleInsideBounds(rectangle, bounds) {
+      return hasValidRectangle(rectangle) && bounds &&
+        rectangle.x >= bounds.x && rectangle.x + rectangle.width <= bounds.x + bounds.width &&
+        rectangle.y >= bounds.y && rectangle.y + rectangle.height <= bounds.y + bounds.height;
+    }
+
+    // Validate the expanded world's boundaries, platforms, checkpoints,
+    // section labels, and route requirements before the engine uses them.
+    function validateLevelConfigData(selectedConfig) {
+      const errors = [];
+      const shooting = selectedConfig.mechanics && selectedConfig.mechanics.shooting;
+      const configuredEnemies = Array.isArray(selectedConfig.enemies) ? selectedConfig.enemies : [];
+
+      // Validate every shooting setting even when the mechanic is disabled.
+      if (!shooting || typeof shooting.enabled !== "boolean") {
+        errors.push("Shooting needs an enabled setting.");
+      } else {
+        if (typeof shooting.fireKey !== "string" || shooting.fireKey.toUpperCase() !== "F") {
+          errors.push("The configured shooting key must be F.");
+        }
+        if (!isFiniteNumber(shooting.cooldown) || shooting.cooldown <= 0) {
+          errors.push("The shooting cooldown must be greater than zero.");
+        }
+        if (!isFiniteNumber(shooting.projectileSpeed) || shooting.projectileSpeed <= 0) {
+          errors.push("Projectile speed must be greater than zero.");
+        }
+        if (!isFiniteNumber(shooting.lifetime) || shooting.lifetime <= 0) {
+          errors.push("Projectile lifetime must be greater than zero.");
+        }
+        if (!Number.isInteger(shooting.color) || shooting.color < 0 || shooting.color > 0xffffff) {
+          errors.push("Projectile color must be a valid hexadecimal color.");
+        }
+        if (!Number.isInteger(shooting.damage) || shooting.damage <= 0) {
+          errors.push("Projectile damage must be a positive whole number.");
+        }
+        if (!shooting.enabled && configuredEnemies.length > 0) {
+          errors.push("Levels without shooting cannot configure enemies.");
+        }
+      }
+
+      if (!selectedConfig.world) {
+        return { ok: errors.length === 0, errors: errors };
+      }
+
+      const physicsBounds = selectedConfig.world.physicsBounds;
+      const cameraBounds = selectedConfig.world.cameraBounds;
+      if (!hasValidRectangle(physicsBounds)) errors.push("Physics bounds are invalid.");
+      if (!hasValidRectangle(cameraBounds)) errors.push("Camera bounds are invalid.");
+      if (hasValidRectangle(physicsBounds) && hasValidRectangle(cameraBounds) &&
+          !isTopLeftRectangleInsideBounds(cameraBounds, physicsBounds)) {
+        errors.push("Camera bounds must stay inside the physics world.");
+      }
+      if (!isPointInsideBounds(selectedConfig.world.start, physicsBounds)) {
+        errors.push("The player start position is invalid.");
+      }
+      if (!isFiniteNumber(selectedConfig.world.fallResetY)) errors.push("The fall-reset boundary is invalid.");
+      if (isFiniteNumber(selectedConfig.world.fallResetY) && physicsBounds &&
+          (selectedConfig.world.fallResetY <= physicsBounds.y ||
+           selectedConfig.world.fallResetY >= physicsBounds.y + physicsBounds.height)) {
+        errors.push("The fall-reset boundary must stay inside the physics world.");
+      }
+      const follow = selectedConfig.world.smoothFollow;
+      if (!follow || !isFiniteNumber(follow.lerpX) || follow.lerpX <= 0 || follow.lerpX > 1 ||
+          !isFiniteNumber(follow.lerpY) || follow.lerpY <= 0 || follow.lerpY > 1) {
+        errors.push("Smooth camera follow values must be between zero and one.");
+      }
+
+      const sectionIds = new Set();
+      if (!Array.isArray(selectedConfig.sections) || selectedConfig.sections.length === 0) {
+        errors.push("An expanded level needs at least one configured section.");
+      }
+      (selectedConfig.sections || []).forEach(function (section) {
+        if (!section || typeof section.id !== "string" || !section.id || sectionIds.has(section.id)) {
+          errors.push("Every section needs a unique ID.");
+          return;
+        }
+        sectionIds.add(section.id);
+        if (typeof section.label !== "string" || !section.label.trim()) errors.push("Every section needs a label.");
+        if (!isFiniteNumber(section.x) || !isFiniteNumber(section.width) || section.width <= 0) {
+          errors.push("Section " + section.id + " has invalid bounds.");
+        } else if (physicsBounds &&
+            (section.x < physicsBounds.x || section.x + section.width > physicsBounds.x + physicsBounds.width)) {
+          errors.push("Section " + section.id + " is outside the world bounds.");
+        }
+      });
+
+      const platformIds = new Set();
+      const platformsById = new Map();
+      selectedConfig.platforms.forEach(function (platformInfo) {
+        if (!platformInfo.id || platformIds.has(platformInfo.id)) errors.push("Every expanded platform needs a unique ID.");
+        platformIds.add(platformInfo.id);
+        platformsById.set(platformInfo.id, platformInfo);
+        if (!hasValidRectangle(platformInfo)) errors.push("Platform " + platformInfo.id + " has invalid geometry.");
+        if (!sectionIds.has(platformInfo.sectionId)) errors.push("Platform " + platformInfo.id + " has an unknown section.");
+        if (physicsBounds && !isCenteredRectangleInsideBounds(platformInfo, physicsBounds)) {
+          errors.push("Platform " + platformInfo.id + " is outside the world bounds.");
+        }
+      });
+
+      const checkpointIds = new Set();
+      if (!Array.isArray(selectedConfig.checkpoints) || selectedConfig.checkpoints.length !== 1) {
+        errors.push("The expanded level needs exactly one configured checkpoint.");
+      }
+      (selectedConfig.checkpoints || []).forEach(function (checkpoint) {
+        if (!checkpoint || typeof checkpoint.id !== "string" || !checkpoint.id || checkpointIds.has(checkpoint.id)) {
+          errors.push("Every checkpoint needs a unique ID.");
+          return;
+        }
+        checkpointIds.add(checkpoint.id);
+        if (!sectionIds.has(checkpoint.sectionId)) errors.push("Checkpoint " + checkpoint.id + " has an unknown section.");
+        if (!isPointInsideBounds(checkpoint, physicsBounds)) errors.push("Checkpoint position is invalid.");
+        if (!hasValidRectangle(checkpoint.activation)) errors.push("Checkpoint activation bounds are invalid.");
+        if (physicsBounds && !isTopLeftRectangleInsideBounds(checkpoint.activation, physicsBounds)) {
+          errors.push("Checkpoint activation bounds are outside the world.");
+        }
+      });
+
+      const npcIds = new Set();
+      (selectedConfig.npcs || []).forEach(function (npc) {
+        if (!npc || typeof npc.id !== "string" || !npc.id || npcIds.has(npc.id)) {
+          errors.push("Every NPC needs a unique ID.");
+          return;
+        }
+        npcIds.add(npc.id);
+        if (!sectionIds.has(npc.sectionId)) errors.push("NPC " + npc.id + " has an unknown section.");
+        if (!isPointInsideBounds(npc, physicsBounds)) errors.push("NPC " + npc.id + " is outside the world bounds.");
+        if (!Array.isArray(npc.completedStates) || npc.completedStates.length === 0) {
+          errors.push("NPC " + npc.id + " needs completed dialogue states.");
+        }
+        const nameLabel = npc.nameLabel;
+        if (nameLabel &&
+            (typeof nameLabel.visible !== "boolean" ||
+             !isFiniteNumber(nameLabel.offsetY) ||
+             typeof nameLabel.color !== "string" || !nameLabel.color.trim() ||
+             typeof nameLabel.backgroundColor !== "string" || !nameLabel.backgroundColor.trim())) {
+          errors.push("NPC " + npc.id + " has an invalid name label.");
+        }
+      });
+
+      if (!isPointInsideBounds(selectedConfig.collectible, physicsBounds)) {
+        errors.push("The collectible is outside the world bounds.");
+      }
+
+      const enemyIds = new Set();
+      if (shooting && shooting.enabled && configuredEnemies.length === 0) {
+        errors.push("A shooting level needs at least one configured enemy.");
+      }
+      configuredEnemies.forEach(function (enemy) {
+        if (!enemy || typeof enemy.id !== "string" || !enemy.id || enemyIds.has(enemy.id)) {
+          errors.push("Every enemy needs a unique ID.");
+          return;
+        }
+        enemyIds.add(enemy.id);
+        if (enemy.type !== "stationary") errors.push("Configured enemies must be stationary.");
+        if (!sectionIds.has(enemy.sectionId)) errors.push("Enemy " + enemy.id + " has an unknown section.");
+        if (!isCenteredRectangleInsideBounds(enemy, physicsBounds)) {
+          errors.push("Enemy " + enemy.id + " is outside the world bounds.");
+        }
+        if (!Number.isInteger(enemy.health) || enemy.health <= 0) {
+          errors.push("Enemy health must be a positive whole number.");
+        }
+        if (!Number.isInteger(enemy.color) || enemy.color < 0 || enemy.color > 0xffffff ||
+            !Number.isInteger(enemy.disabledColor) || enemy.disabledColor < 0 || enemy.disabledColor > 0xffffff) {
+          errors.push("The enemy colors are invalid.");
+        }
+        if (typeof enemy.name !== "string" || !enemy.name.trim() ||
+            typeof enemy.disabledLabel !== "string" || !enemy.disabledLabel.trim() ||
+            typeof enemy.objectiveAfterDefeat !== "string" || !enemy.objectiveAfterDefeat.trim() ||
+            typeof enemy.unlockRouteId !== "string" || !enemy.unlockRouteId) {
+          errors.push("The enemy defeat settings are invalid.");
+        }
+        const offense = enemy.offense;
+        const warning = offense && offense.firstAttackWarning;
+        if (!offense || offense.enabled !== true ||
+            !isFiniteNumber(offense.cooldown) || offense.cooldown <= 0 ||
+            !isFiniteNumber(offense.projectileSpeed) || offense.projectileSpeed <= 0 ||
+            !isFiniteNumber(offense.lifetime) || offense.lifetime <= 0 ||
+            !isFiniteNumber(offense.range) || offense.range <= 0 ||
+            !Number.isInteger(offense.color) || offense.color < 0 || offense.color > 0xffffff ||
+            offense.hitEffect !== "retryCheckpoint") {
+          errors.push("The enemy offense configuration is invalid.");
+        }
+        if (!warning || !isFiniteNumber(warning.duration) || warning.duration <= 0 ||
+            typeof warning.text !== "string" || !warning.text.trim()) {
+          errors.push("The enemy first-attack warning is invalid.");
+        }
+      });
+
+      const configuredRoutes = new Set();
+      if (selectedConfig.storyGraph) {
+        selectedConfig.storyGraph.nodes.forEach(function (node) {
+          node.choices.forEach(function (choice) {
+            choice.effects.forEach(function (effect) {
+              if (effect.type === "unlockRoute") configuredRoutes.add(effect.routeId);
+            });
+          });
+        });
+      }
+      configuredEnemies.forEach(function (enemy) {
+        if (enemy && typeof enemy.unlockRouteId === "string" && enemy.unlockRouteId) {
+          configuredRoutes.add(enemy.unlockRouteId);
+        }
+      });
+
+      // NPC starting and completed dialogue nodes must all exist in the same
+      // validated story graph. The engine never guesses theme-specific states.
+      const storyNodeIds = new Set(
+        selectedConfig.storyGraph
+          ? selectedConfig.storyGraph.nodes.map(function (node) { return node.id; })
+          : []
+      );
+      (selectedConfig.npcs || []).forEach(function (npc) {
+        if (!storyNodeIds.has(npc.storyNodeId)) {
+          errors.push("NPC " + npc.id + " has an unknown starting dialogue node.");
+        }
+        (npc.completedStates || []).forEach(function (completedState) {
+          if (!completedState || typeof completedState.flag !== "string" || !completedState.flag ||
+              !storyNodeIds.has(completedState.nodeId) ||
+              typeof completedState.buttonText !== "string" || !completedState.buttonText.trim()) {
+            errors.push("NPC " + npc.id + " has an invalid completed dialogue state.");
+          }
+        });
+      });
+
+      (selectedConfig.checkpoints || []).forEach(function (checkpoint) {
+        if (Array.isArray(checkpoint.requiredAnyRoutes) &&
+            checkpoint.requiredAnyRoutes.some(function (routeId) {
+              return !configuredRoutes.has(routeId);
+            })) {
+          errors.push("Checkpoint " + checkpoint.id + " has an unknown route requirement.");
+        }
+      });
+
+      if (selectedConfig.storyWorld) {
+        const storyObjectIds = new Set();
+        if (!Array.isArray(selectedConfig.storyWorld.barriers) ||
+            !Array.isArray(selectedConfig.storyWorld.routePlatforms)) {
+          errors.push("Story-world barriers and route platforms must be configured arrays.");
+        }
+        (selectedConfig.storyWorld.barriers || []).forEach(function (barrierInfo) {
+          if (!barrierInfo.id || storyObjectIds.has(barrierInfo.id)) {
+            errors.push("Every story barrier needs a unique ID.");
+          } else {
+            storyObjectIds.add(barrierInfo.id);
+          }
+          if (!isCenteredRectangleInsideBounds(barrierInfo, physicsBounds)) {
+            errors.push("Story barrier " + barrierInfo.id + " has invalid world geometry.");
+          }
+          if (!sectionIds.has(barrierInfo.sectionId)) {
+            errors.push("Story barrier " + barrierInfo.id + " has an unknown section.");
+          }
+          if (!configuredRoutes.has(barrierInfo.requiredRouteId)) {
+            errors.push("Story barrier " + barrierInfo.id + " has an unknown route requirement.");
+          }
+          const lockedHint = barrierInfo.lockedHint;
+          if (lockedHint &&
+              (!isFiniteNumber(lockedHint.distance) || lockedHint.distance <= 0 ||
+               typeof lockedHint.text !== "string" || !lockedHint.text.trim())) {
+            errors.push("Story barrier " + barrierInfo.id + " has an invalid locked hint.");
+          }
+        });
+        (selectedConfig.storyWorld.routePlatforms || []).forEach(function (platformInfo) {
+          if (!hasValidRectangle(platformInfo)) errors.push("An alternate-route platform has invalid geometry.");
+          if (physicsBounds && !isCenteredRectangleInsideBounds(platformInfo, physicsBounds)) {
+            errors.push("An alternate-route platform is outside the world bounds.");
+          }
+          if (!platformInfo.id || platformIds.has(platformInfo.id)) {
+            errors.push("Every expanded platform needs a unique ID.");
+          } else {
+            platformIds.add(platformInfo.id);
+            platformsById.set(platformInfo.id, platformInfo);
+          }
+          if (!configuredRoutes.has(platformInfo.requiredRouteId)) {
+            errors.push("A route platform has an unknown route requirement.");
+          }
+        });
+      }
+
+      // A conservative physics check ensures all configured progression jumps
+      // are comfortably inside the player's vertical and horizontal range.
+      const gravity = config.physics.arcade.gravity.y;
+      const maximumRise = (selectedConfig.jumpStrength * selectedConfig.jumpStrength) / (2 * gravity);
+      const totalAirTime = (2 * selectedConfig.jumpStrength) / gravity;
+      const maximumHorizontalRange = selectedConfig.playerSpeed * totalAirTime;
+      (selectedConfig.requiredJumps || []).forEach(function (jump) {
+        const fromPlatform = platformsById.get(jump.from);
+        const toPlatform = platformsById.get(jump.to);
+        if (!fromPlatform || !toPlatform) {
+          errors.push("A required jump refers to an unknown platform.");
+          return;
+        }
+        if (jump.requiredRouteId && !configuredRoutes.has(jump.requiredRouteId)) {
+          errors.push("A required jump has an unknown route requirement.");
+        }
+
+        const fromTop = fromPlatform.y - fromPlatform.height / 2;
+        const toTop = toPlatform.y - toPlatform.height / 2;
+        const upwardRise = Math.max(0, fromTop - toTop);
+        const horizontalGap = Math.max(
+          0,
+          Math.abs(toPlatform.x - fromPlatform.x) -
+            (fromPlatform.width + toPlatform.width) / 2
+        );
+        if (upwardRise > maximumRise * 0.85 || horizontalGap > maximumHorizontalRange * 0.75) {
+          errors.push("Required jump from " + jump.from + " to " + jump.to + " is not safely reachable.");
+        }
+      });
+
+      return { ok: errors.length === 0, errors: errors };
+    }
+
+    // Load and validate the shared request before choosing a platformer config.
+    function loadPlatformerRequest() {
+      if (!window.BespokeGameRequest) {
+        showRequestMessage("The shared game request could not be loaded.");
+        return;
+      }
+
+      const result = BespokeGameRequest.load("platformer");
+
+      if (!result.ok) {
+        showRequestMessage(result.error);
+        return;
+      }
+
+      currentRequest = result.request;
+      selectedTemplate = selectTemplate(result.request.prompt);
+      const promptPace = configurePromptPace(selectedTemplate, result.request.prompt);
+      levelConfig = promptPace.configuration;
+      validatedLevelConfig = validateLevelConfigData(levelConfig).ok;
+      if (!validatedLevelConfig) {
+        showRequestMessage("The selected game template is invalid and cannot be started.");
+        return;
+      }
+
+      gameTitle.textContent = selectedTemplate.displayName;
+      generatedTitle.textContent = "Generated game: " + selectedTemplate.displayName;
+      generatedTitle.hidden = false;
+      const paceSummary = document.getElementById("prompt-pace");
+      paceSummary.textContent = promptPace.summary;
+      paceSummary.hidden = !promptPace.summary;
+      validateCurrentStoryGraph();
+      applyBackground();
+      updateNpcUploadControls();
+
+      // A fresh launcher request always overwrites the previous run. A refresh
+      // has the same request date, so it restores the compatible current run.
+      if (!continueGame()) {
+        startNewGame();
+      }
+
+      const requestSummary = document.getElementById("request-summary");
+      requestSummary.textContent = "Game request: " + result.request.prompt;
+      requestSummary.hidden = false;
+    }
+
+    // Create and save a clean per-game story state. User assets use other keys.
+    function startNewGame() {
+      if (!window.BespokeStoryState || !currentRequest) return false;
+
+      const result = BespokeStoryState.startNewGame({
+        storyId: levelConfig.storyId,
+        requestCreatedAt: currentRequest.createdAt,
+        currentObjective: selectedTemplate.startingObjective
+      });
+      gameState = result.state;
+      resetDialogueChoiceHistory();
+      return result.ok;
+    }
+
+    // Restore only progress compatible with this story, schema, and request.
+    function continueGame() {
+      if (!window.BespokeStoryState || !currentRequest) return false;
+
+      const result = BespokeStoryState.continueGame(
+        levelConfig.storyId,
+        currentRequest.createdAt
+      );
+      if (!result.ok) return false;
+
+      gameState = result.state;
+      return true;
+    }
+
+    function showRequestMessage(message) {
+      document.getElementById("request-message-text").textContent = message;
+      document.getElementById("request-message").hidden = false;
+    }
+
+    // Validate the selected configuration before any dialogue can use it.
+    function validateCurrentStoryGraph() {
+      validatedStoryGraph = null;
+
+      if (!levelConfig.storyGraph) {
+        return;
+      }
+      if (!window.BespokeStoryState) {
+        showRequestMessage("The shared story-state system could not be loaded.");
+        return;
+      }
+
+      const result = BespokeStoryState.validateStoryGraph(levelConfig.storyGraph);
+      if (!result.ok) {
+        console.warn("[Platformer] Invalid story graph ignored:", result.errors);
+        return;
+      }
+      validatedStoryGraph = result;
+    }
+
+    loadPlatformerRequest();
+    const assetsReady = restorePersistentUserAssets();
+
+    // Setup screen: check the selected file before using it as a background.
+    backgroundFileInputs.forEach(function (fileInput) {
+      fileInput.addEventListener("change", function () {
+        const file = fileInput.files[0];
+        clearBackgroundErrors();
+
+        if (!file) {
+          return;
+        }
+
+        if (!SUPPORTED_FILE_TYPES.includes(file.type)) {
+          showBackgroundError("Unsupported file. Please choose a PNG, JPEG, or WebP image.");
+          return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          showBackgroundError("That image is larger than 5 MB. Please choose a smaller file.");
+          return;
+        }
+
+        startButton.disabled = true;
+        const reader = new FileReader();
+
+        reader.addEventListener("load", function () {
+          selectedBackground = reader.result;
+          fileStatus.textContent = "Selected: " + file.name;
+          applyBackground();
+          updateUserSettings({ backgroundMode: "uploaded" });
+          savePersistentUserAsset("background", reader.result);
+          startButton.disabled = false;
+        });
+
+        reader.addEventListener("error", function () {
+          showBackgroundError("The image could not be read. Please try another file.");
+          startButton.disabled = false;
+        });
+
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // Player image setup: validate the file, then make sure it can load as an image.
+    playerFileInputs.forEach(function (fileInput) {
+      fileInput.addEventListener("change", function () {
+        const file = fileInput.files[0];
+        clearPlayerErrors();
+
+        if (!file) {
+          return;
+        }
+
+        if (!SUPPORTED_FILE_TYPES.includes(file.type)) {
+          showPlayerError("Unsupported file. Please choose a PNG, JPEG, or WebP image.");
+          useDefaultPlayer(false);
+          return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          showPlayerError("That image is larger than 5 MB. Please choose a smaller file.");
+          useDefaultPlayer(false);
+          return;
+        }
+
+        startButton.disabled = true;
+        const reader = new FileReader();
+
+        reader.addEventListener("load", function () {
+          const loadedImage = new Image();
+
+          loadedImage.addEventListener("load", function () {
+            selectedPlayerImage = loadedImage;
+            playerFileStatus.textContent = "Selected: " + file.name;
+            showSelectedPlayerImage();
+            updateUserSettings({ playerMode: "uploaded" });
+            savePersistentUserAsset("player", reader.result);
+            startButton.disabled = false;
+          });
+
+          loadedImage.addEventListener("error", function () {
+            useDefaultPlayer(false);
+            showPlayerError("The image could not be loaded. Using the default player.");
+            startButton.disabled = false;
+          });
+
+          loadedImage.src = reader.result;
+        });
+
+        reader.addEventListener("error", function () {
+          useDefaultPlayer(false);
+          showPlayerError("The image could not be read. Using the default player.");
+          startButton.disabled = false;
+        });
+
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // An NPC can keep its configured color or use one optional uploaded image.
+    npcImageFile.addEventListener("change", function () {
+      const file = npcImageFile.files[0];
+      const npcInfo = levelConfig.npcs[0];
+      npcFileError.textContent = "";
+
+      if (!file || !npcInfo || !npcInfo.uploadAssetId) {
+        return;
+      }
+
+      if (!SUPPORTED_FILE_TYPES.includes(file.type)) {
+        showNpcFileError("Unsupported file. Please choose a PNG, JPEG, or WebP image.");
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        showNpcFileError("That image is larger than 5 MB. Please choose a smaller file.");
+        return;
+      }
+
+      startButton.disabled = true;
+      const reader = new FileReader();
+
+      reader.addEventListener("load", function () {
+        const loadedImage = new Image();
+
+        loadedImage.addEventListener("load", function () {
+          npcInfo.uploadedImage = loadedImage;
+          npcFileStatus.textContent = "Selected: " + file.name;
+          updateUserSettings({ npcMode: "uploaded" });
+          savePersistentUserAsset(npcInfo.uploadAssetId, reader.result);
+          startButton.disabled = false;
+        });
+
+        loadedImage.addEventListener("error", function () {
+          showNpcFileError("The NPC image could not be loaded. Using its default color.");
+          npcInfo.uploadedImage = null;
+          startButton.disabled = false;
+        });
+
+        loadedImage.src = reader.result;
+      });
+
+      reader.addEventListener("error", function () {
+        showNpcFileError("The NPC image could not be read. Using its default color.");
+        npcInfo.uploadedImage = null;
+        startButton.disabled = false;
+      });
+
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("default-button").addEventListener("click", useDefaultBackground);
+    document.getElementById("game-default-button").addEventListener("click", useDefaultBackground);
+    document.getElementById("default-player-button").addEventListener("click", useDefaultPlayer);
+    document.getElementById("game-default-player-button").addEventListener("click", useDefaultPlayer);
+    document.getElementById("default-npc-button").addEventListener("click", useDefaultNpc);
+
+    function getControlKeyNames(binding) {
+      return binding.getKeyNames ? binding.getKeyNames() : binding.keyNames.slice();
+    }
+
+    function formatControlKeyName(keyName) {
+      return CONTROL_KEY_LABELS[keyName] || keyName;
+    }
+
+    // Build both the playable keys and the visible instructions from the same
+    // binding definitions. A template shows only its allowed mechanics.
+    function createControlKeys(scene) {
+      controlKeys = {};
+      Object.entries(CONTROL_BINDINGS).forEach(function ([bindingId, binding]) {
+        if (!selectedTemplate.allowedMechanics.includes(binding.mechanic)) return;
+        controlKeys[bindingId] = getControlKeyNames(binding).map(function (keyName) {
+          return scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[keyName]);
+        });
+      });
+    }
+
+    function isControlDown(bindingId) {
+      return (controlKeys[bindingId] || []).some(function (key) {
+        return key.isDown;
+      });
+    }
+
+    function isControlJustDown(bindingId) {
+      return (controlKeys[bindingId] || []).some(function (key) {
+        return Phaser.Input.Keyboard.JustDown(key);
+      });
+    }
+
+    function renderHowToPlayControls() {
+      howToPlayTemplateName.textContent = "Controls for " + selectedTemplate.displayName + ":";
+      howToPlayControls.textContent = "";
+
+      Object.values(CONTROL_BINDINGS).forEach(function (binding) {
+        if (!selectedTemplate.allowedMechanics.includes(binding.mechanic)) return;
+
+        const item = document.createElement("li");
+        const keyLabels = getControlKeyNames(binding).map(formatControlKeyName);
+        item.textContent = binding.action + ": " + keyLabels.join(" or ");
+        howToPlayControls.appendChild(item);
+      });
+    }
+
+    function openHowToPlay() {
+      if (!gameScene || howToPlayDialog.open) return;
+
+      renderHowToPlayControls();
+      if (player && player.body) player.setVelocityX(0);
+
+      // Pausing the whole Phaser scene freezes physics, projectiles, enemy
+      // attacks, NPC interaction, updates, and the scene clock together.
+      gameScene.scene.pause();
+      howToPlayDialog.showModal();
+      startAdventureButton.focus();
+    }
+
+    function closeHowToPlay() {
+      if (!howToPlayDialog.open) return;
+      howToPlayDialog.close();
+      if (gameScene) gameScene.scene.resume();
+    }
+
+    howToPlayButton.addEventListener("click", openHowToPlay);
+    startAdventureButton.addEventListener("click", closeHowToPlay);
+    howToPlayDialog.addEventListener("cancel", function (event) {
+      event.preventDefault();
+      closeHowToPlay();
+    });
+    howToPlayDialog.addEventListener("keydown", function (event) {
+      const activatesStart = event.target === startAdventureButton &&
+        (event.key === "Enter" || event.key === " ");
+      if (event.key === "Escape" || activatesStart) {
+        event.preventDefault();
+        closeHowToPlay();
+      }
+    });
+
+    function beginPlatformer() {
+      if (!validatedLevelConfig) return;
+      setupScreen.style.display = "none";
+      gameControls.style.display = "block";
+      gameContainer.style.display = "block";
+      applyBackground();
+      game = new Phaser.Game(config);
+    }
+
+    startButton.addEventListener("click", async function () {
+      await assetsReady;
+      beginPlatformer();
+    });
+
+    retryCheckpointButton.addEventListener("click", retryFromCheckpoint);
+
+    startNewStoryButton.addEventListener("click", function () {
+      newStoryConfirmation.showModal();
+    });
+
+    cancelNewStoryButton.addEventListener("click", function () {
+      newStoryConfirmation.close();
+    });
+
+    // Starting a new story creates a fresh run, while uploaded assets and user
+    // settings remain stored under their separate persistent keys.
+    confirmNewStoryButton.addEventListener("click", function () {
+      if (!startNewGame()) return;
+      resetLevelAttempt(true);
+      newStoryConfirmation.close();
+    });
+
+    function showBackgroundError(message) {
+      backgroundFileInputs.forEach(function (fileInput) {
+        fileInput.value = "";
+      });
+      backgroundErrors.forEach(function (errorMessage) {
+        errorMessage.textContent = message;
+      });
+    }
+
+    function clearBackgroundErrors() {
+      backgroundErrors.forEach(function (errorMessage) {
+        errorMessage.textContent = "";
+      });
+    }
+
+    function showPlayerError(message) {
+      playerErrors.forEach(function (errorMessage) {
+        errorMessage.textContent = message;
+      });
+    }
+
+    function clearPlayerErrors() {
+      playerErrors.forEach(function (errorMessage) {
+        errorMessage.textContent = "";
+      });
+    }
+
+    function showNpcFileError(message) {
+      npcImageFile.value = "";
+      npcFileError.textContent = message;
+    }
+
+    function updateNpcUploadControls() {
+      const npcInfo = levelConfig.npcs[0];
+      npcUploadGroup.hidden = !npcInfo || !npcInfo.uploadAssetId;
+
+      if (npcInfo && npcInfo.uploadAssetId) {
+        npcFileStatus.textContent = npcInfo.uploadedImage
+          ? "Using the selected image for " + npcInfo.name + "."
+          : "Using " + npcInfo.name + "'s default color.";
+        npcFileError.textContent = "";
+      }
+    }
+
+    function useDefaultNpc() {
+      const npcInfo = levelConfig.npcs[0];
+
+      if (!npcInfo || !npcInfo.uploadAssetId) {
+        return;
+      }
+
+      npcInfo.uploadedImage = null;
+      npcImageFile.value = "";
+      npcFileStatus.textContent = "Using " + npcInfo.name + "'s default color.";
+      npcFileError.textContent = "";
+      updateUserSettings({ npcMode: "default" });
+      removePersistentUserAsset(npcInfo.uploadAssetId);
+    }
+
+    function useDefaultBackground() {
+      selectedBackground = null;
+      backgroundFileInputs.forEach(function (fileInput) {
+        fileInput.value = "";
+      });
+      fileStatus.textContent = "Using the default background.";
+      clearBackgroundErrors();
+      applyBackground();
+      updateUserSettings({ backgroundMode: "default" });
+      removePersistentUserAsset("background");
+    }
+
+    function useDefaultPlayer(clearError = true) {
+      selectedPlayerImage = null;
+      playerFileInputs.forEach(function (fileInput) {
+        fileInput.value = "";
+      });
+      playerFileStatus.textContent = "Using the default player.";
+
+      if (clearError) {
+        clearPlayerErrors();
+      }
+
+      if (playerVisual) {
+        playerVisual.destroy();
+        playerVisual = null;
+      }
+
+      if (player) {
+        player.setVisible(true);
+      }
+
+      updateUserSettings({ playerMode: "default" });
+      removePersistentUserAsset("player");
+    }
+
+    // User assets/settings are persistent, but are deliberately separate from story progress.
+    function loadUserSettings() {
+      const defaults = {
+        schemaVersion: USER_SETTINGS_SCHEMA_VERSION,
+        backgroundMode: "default",
+        playerMode: "default",
+        npcMode: "default"
+      };
+
+      try {
+        const savedValue = localStorage.getItem(USER_SETTINGS_KEY);
+        if (!savedValue) return defaults;
+        const savedSettings = JSON.parse(savedValue);
+
+        if (!savedSettings || savedSettings.schemaVersion !== USER_SETTINGS_SCHEMA_VERSION) {
+          return defaults;
+        }
+        return Object.assign({}, defaults, savedSettings);
+      } catch (error) {
+        return defaults;
+      }
+    }
+
+    function updateUserSettings(changes) {
+      userSettings = Object.assign({}, userSettings, changes, {
+        schemaVersion: USER_SETTINGS_SCHEMA_VERSION
+      });
+
+      try {
+        localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userSettings));
+      } catch (error) {
+        console.warn("[Platformer] User settings could not be saved:", error);
+      }
+    }
+
+    // IndexedDB stores image data without mixing large files into story progress.
+    function openAssetDatabase() {
+      return new Promise(function (resolve, reject) {
+        if (!window.indexedDB) {
+          resolve(null);
+          return;
+        }
+
+        const request = indexedDB.open(ASSET_DATABASE_NAME, 1);
+        request.addEventListener("upgradeneeded", function () {
+          if (!request.result.objectStoreNames.contains(ASSET_STORE_NAME)) {
+            request.result.createObjectStore(ASSET_STORE_NAME);
+          }
+        });
+        request.addEventListener("success", function () { resolve(request.result); });
+        request.addEventListener("error", function () { reject(request.error); });
+      });
+    }
+
+    async function savePersistentUserAsset(assetId, dataUrl) {
+      try {
+        const database = await openAssetDatabase();
+        if (!database) return;
+        const transaction = database.transaction(ASSET_STORE_NAME, "readwrite");
+        transaction.objectStore(ASSET_STORE_NAME).put(dataUrl, assetId);
+        transaction.addEventListener("complete", function () { database.close(); });
+      } catch (error) {
+        console.warn("[Platformer] Uploaded image could not be persisted:", error);
+      }
+    }
+
+    async function loadPersistentUserAsset(assetId) {
+      try {
+        const database = await openAssetDatabase();
+        if (!database) return null;
+
+        return await new Promise(function (resolve) {
+          const transaction = database.transaction(ASSET_STORE_NAME, "readonly");
+          const request = transaction.objectStore(ASSET_STORE_NAME).get(assetId);
+          request.addEventListener("success", function () {
+            resolve(request.result || null);
+            database.close();
+          });
+          request.addEventListener("error", function () {
+            resolve(null);
+            database.close();
+          });
+        });
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function removePersistentUserAsset(assetId) {
+      try {
+        const database = await openAssetDatabase();
+        if (!database) return;
+        const transaction = database.transaction(ASSET_STORE_NAME, "readwrite");
+        transaction.objectStore(ASSET_STORE_NAME).delete(assetId);
+        transaction.addEventListener("complete", function () { database.close(); });
+      } catch (error) {
+        console.warn("[Platformer] Uploaded image could not be removed:", error);
+      }
+    }
+
+    function loadImage(dataUrl) {
+      return new Promise(function (resolve) {
+        if (!dataUrl) {
+          resolve(null);
+          return;
+        }
+
+        const image = new Image();
+        image.addEventListener("load", function () { resolve(image); });
+        image.addEventListener("error", function () { resolve(null); });
+        image.src = dataUrl;
+      });
+    }
+
+    async function restorePersistentUserAssets() {
+      if (userSettings.backgroundMode === "uploaded") {
+        selectedBackground = await loadPersistentUserAsset("background");
+        if (selectedBackground) fileStatus.textContent = "Using your saved background image.";
+      }
+
+      if (userSettings.playerMode === "uploaded") {
+        selectedPlayerImage = await loadImage(await loadPersistentUserAsset("player"));
+        if (selectedPlayerImage) playerFileStatus.textContent = "Using your saved player image.";
+      }
+
+      if (userSettings.npcMode === "uploaded") {
+        for (const template of Object.values(templateRegistry)) {
+          for (const npcInfo of template.configuration.npcs) {
+            if (!npcInfo.uploadAssetId) continue;
+            const npcImage = await loadImage(
+              await loadPersistentUserAsset(npcInfo.uploadAssetId)
+            );
+            if (npcImage) npcInfo.uploadedImage = npcImage;
+          }
+        }
+      }
+
+      applyBackground();
+      updateNpcUploadControls();
+    }
+
+    // The background is visual only. It never changes the configured physics bounds.
+    function applyBackground() {
+      gameContainer.style.backgroundColor = levelConfig.backgroundColor;
+      gameContainer.style.backgroundImage = selectedBackground
+        ? 'url("' + selectedBackground + '")'
+        : "none";
+    }
+
+    applyBackground();
+
+    function create() {
+      gameScene = this;
+      const worldInfo = getWorldInfo();
+
+      this.physics.world.setBounds(
+        worldInfo.physicsBounds.x,
+        worldInfo.physicsBounds.y,
+        worldInfo.physicsBounds.width,
+        worldInfo.physicsBounds.height
+      );
+      this.cameras.main.setBounds(
+        worldInfo.cameraBounds.x,
+        worldInfo.cameraBounds.y,
+        worldInfo.cameraBounds.width,
+        worldInfo.cameraBounds.height
+      );
+
+      // Any expanded level sections are drawn from validated configuration.
+      createLevelSections(this);
+
+      // Create small colored textures so no artwork files are needed.
+      makeRectangleTexture(
+        this,
+        "player",
+        PLAYER_WIDTH,
+        PLAYER_HEIGHT,
+        levelConfig.playerColor
+      );
+      makeCircleTexture(
+        this,
+        "collectible",
+        13,
+        levelConfig.collectible.color
+      );
+
+      // Platforms: every position and size comes from the selected level configuration.
+      platforms = this.physics.add.staticGroup();
+      levelConfig.platforms.forEach((platformInfo, index) => {
+        const textureName = "platform-" + index;
+        makeRectangleTexture(
+          this,
+          textureName,
+          platformInfo.width,
+          platformInfo.height,
+          platformInfo.color
+        );
+        platforms.create(platformInfo.x, platformInfo.y, textureName);
+      });
+
+      // Story routes reuse Arcade Physics but are controlled only by saved state.
+      createStoryWorld(this);
+
+      // Player: the same black fallback rectangle and physics body used by every level.
+      player = this.physics.add.sprite(worldInfo.start.x, worldInfo.start.y, "player");
+      player.setCollideWorldBounds(true);
+      player.setBounce(0.05);
+      this.physics.add.collider(player, platforms);
+      storyBarriers.forEach(function (barrier) {
+        this.physics.add.collider(player, barrier);
+      }, this);
+      showSelectedPlayerImage();
+
+      if (worldInfo.smoothFollow) {
+        this.cameras.main.startFollow(
+          player,
+          true,
+          worldInfo.smoothFollow.lerpX,
+          worldInfo.smoothFollow.lerpY
+        );
+      }
+
+      // NPC visuals come from levelConfig and never receive physics bodies.
+      createNpcSprites(this);
+
+      // Collectible: touch the configured colored shape to win.
+      collectible = this.physics.add.sprite(
+        levelConfig.collectible.x,
+        levelConfig.collectible.y,
+        "collectible"
+      );
+      collectible.setBounce(0.3);
+      this.physics.add.collider(collectible, platforms);
+      this.physics.add.overlap(player, collectible, collectItem, null, this);
+
+      // Optional shooting and the configured drone exist only when enabled.
+      createShootingMechanic(this);
+
+      scoreText = this.add.text(18, 16, "Score: 0", {
+        fontSize: "24px",
+        fontFamily: "Arial",
+        color: "#ffffff",
+        stroke: "#0f172a",
+        strokeThickness: 4
+      }).setScrollFactor(0).setDepth(20);
+
+      winText = this.add.text(400, 70, "", {
+        fontSize: "36px",
+        fontFamily: "Arial",
+        fontStyle: "bold",
+        color: "#ffffff",
+        backgroundColor: "#16a34a",
+        padding: { x: 18, y: 10 }
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(20);
+
+      applyWorldState();
+
+      interactionText = this.add.text(400, 380, "", {
+        fontSize: "18px",
+        fontFamily: "Arial",
+        color: "#ffffff",
+        backgroundColor: "#0f172a",
+        padding: { x: 10, y: 6 },
+        wordWrap: { width: 720 }
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(20).setVisible(false);
+
+      createCheckpointMarkers(this);
+
+      // Player controls and their instructions share these same bindings.
+      createControlKeys(this);
+
+      // The first frame stays paused until the player starts the adventure.
+      openHowToPlay();
+    }
+
+    function update() {
+      // The uploaded image follows the physics sprite but never changes its body.
+      if (playerVisual) {
+        playerVisual.setPosition(player.x, player.y);
+      }
+
+      if (dialogueOpen) {
+        return;
+      }
+
+      updateCheckpoint();
+
+      const worldInfo = getWorldInfo();
+      if (isFiniteNumber(worldInfo.fallResetY) && player.y >= worldInfo.fallResetY) {
+        resetPlayerAfterFall();
+        return;
+      }
+
+      const nearbyNpc = getNearbyNpc();
+      const nearbyLockedBarrier = nearbyNpc ? null : getNearbyLockedBarrier();
+
+      interactionText.setVisible(Boolean(nearbyNpc || nearbyLockedBarrier));
+
+      if (nearbyNpc) {
+        const interactionKey = formatControlKeyName(
+          getControlKeyNames(CONTROL_BINDINGS.interact)[0]
+        );
+        interactionText.setText("Press " + interactionKey + " to talk to " + nearbyNpc.info.name);
+        if (isControlJustDown("interact")) {
+          openDialogue(nearbyNpc.info);
+          return;
+        }
+      } else if (nearbyLockedBarrier) {
+        interactionText.setText(nearbyLockedBarrier.info.lockedHint.text);
+      }
+
+      const movingLeft = isControlDown("moveLeft");
+      const movingRight = isControlDown("moveRight");
+
+      if (movingLeft) {
+        playerFacing = -1;
+        player.setVelocityX(-levelConfig.playerSpeed);
+      } else if (movingRight) {
+        playerFacing = 1;
+        player.setVelocityX(levelConfig.playerSpeed);
+      } else {
+        player.setVelocityX(0);
+      }
+
+      if (isControlJustDown("shoot")) {
+        fireProjectile();
+      }
+
+      updateEnemyOffense();
+
+      const wantsToJump = isControlJustDown("jump");
+
+      if (wantsToJump && player.body.blocked.down) {
+        player.setVelocityY(-levelConfig.jumpStrength);
+      }
+    }
+
+    // Win condition: collecting the level's collectible adds one point and shows a message.
+    function collectItem(playerSprite, item) {
+      item.disableBody(true, true);
+      score += 1;
+      scoreText.setText("Score: " + score);
+      winText.setText("You win!");
+      playerSprite.setTint(0xa78bfa);
+    }
+
+    // Retry from the latest checkpoint without changing narrative choices.
+    function retryFromCheckpoint() {
+      resetLevelAttempt(false);
+    }
+
+    // A new story clears its checkpoint; a normal retry keeps it active.
+    function resetLevelAttempt(clearCheckpoint) {
+      closeDialogue();
+      clearProjectiles();
+      if (clearCheckpoint) {
+        activeCheckpoint = null;
+        checkpointMarkers.forEach(function (entry) {
+          entry.marker.setFillStyle(entry.info.color, 1);
+        });
+      }
+      score = 0;
+      scoreText.setText("Score: 0");
+      winText.setText("");
+      player.clearTint();
+      const resetPoint = activeCheckpoint || getWorldInfo().start;
+      player.enableBody(true, resetPoint.x, resetPoint.y, true, true);
+      player.setVelocity(0, 0);
+      collectible.enableBody(
+        true,
+        levelConfig.collectible.x,
+        levelConfig.collectible.y,
+        true,
+        true
+      );
+      collectible.setVelocity(0, 0);
+      applyWorldState();
+    }
+
+    function getWorldInfo() {
+      return levelConfig.world || {
+        physicsBounds: { x: 0, y: 0, width: 800, height: 450 },
+        cameraBounds: { x: 0, y: 0, width: 800, height: 450 },
+        start: { x: 70, y: 360 },
+        fallResetY: null,
+        smoothFollow: null
+      };
+    }
+
+    function createLevelSections(scene) {
+      (levelConfig.sections || []).forEach(function (section) {
+        scene.add.rectangle(
+          section.x + section.width / 2,
+          225,
+          section.width,
+          450,
+          section.color,
+          0.28
+        ).setDepth(-20);
+
+        scene.add.text(section.x + section.width / 2, 34, section.label, {
+          fontSize: "22px",
+          fontFamily: "Arial",
+          fontStyle: "bold",
+          color: section.labelColor
+        }).setOrigin(0.5).setDepth(-10);
+      });
+    }
+
+    function createCheckpointMarkers(scene) {
+      checkpointMarkers = [];
+      activeCheckpoint = null;
+
+      (levelConfig.checkpoints || []).forEach(function (checkpoint) {
+        const marker = scene.add.rectangle(
+          checkpoint.x,
+          checkpoint.y,
+          12,
+          48,
+          checkpoint.color,
+          1
+        ).setDepth(3);
+        checkpointMarkers.push({ info: checkpoint, marker: marker });
+      });
+    }
+
+    function updateCheckpoint() {
+      checkpointMarkers.forEach(function (entry) {
+        const activation = entry.info.activation;
+        const routeReady = !Array.isArray(entry.info.requiredAnyRoutes) ||
+          entry.info.requiredAnyRoutes.some(function (routeId) {
+            return gameState && gameState.unlockedRoutes.includes(routeId);
+          });
+        const insideActivation =
+          routeReady &&
+          player.x >= activation.x &&
+          player.x <= activation.x + activation.width &&
+          player.y >= activation.y &&
+          player.y <= activation.y + activation.height;
+
+        if (insideActivation && activeCheckpoint !== entry.info) {
+          activeCheckpoint = entry.info;
+          entry.marker.setFillStyle(0x22c55e, 1);
+        }
+      });
+    }
+
+    // Falling moves the player to the active checkpoint without touching story state.
+    function resetPlayerAfterFall() {
+      clearEnemyProjectiles();
+      const resetPoint = activeCheckpoint || getWorldInfo().start;
+      player.enableBody(true, resetPoint.x, resetPoint.y, true, true);
+      player.setVelocity(0, 0);
+    }
+
+    function createNpcSprites(scene) {
+      npcSprites = [];
+
+      levelConfig.npcs.forEach(function (npcInfo) {
+        let sprite;
+
+        if (npcInfo.uploadedImage) {
+          const textureName = "uploaded-npc-" + npcInfo.id;
+          scene.textures.addImage(textureName, npcInfo.uploadedImage);
+          sprite = scene.add.image(npcInfo.x, npcInfo.y, textureName);
+
+          const scale = Math.min(
+            NPC_WIDTH / npcInfo.uploadedImage.naturalWidth,
+            NPC_HEIGHT / npcInfo.uploadedImage.naturalHeight
+          );
+          sprite.setScale(scale);
+        } else {
+          const textureName = "npc-" + npcInfo.id;
+          makeRectangleTexture(
+            scene,
+            textureName,
+            NPC_WIDTH,
+            NPC_HEIGHT,
+            npcInfo.defaultColor
+          );
+          sprite = scene.add.image(npcInfo.x, npcInfo.y, textureName);
+        }
+
+        sprite.setDepth(2);
+        let nameLabel = null;
+        if (npcInfo.nameLabel && npcInfo.nameLabel.visible) {
+          nameLabel = scene.add.text(
+            npcInfo.x,
+            npcInfo.y + npcInfo.nameLabel.offsetY,
+            npcInfo.name,
+            {
+              fontSize: "15px",
+              fontFamily: "Arial",
+              fontStyle: "bold",
+              color: npcInfo.nameLabel.color,
+              backgroundColor: npcInfo.nameLabel.backgroundColor,
+              padding: { x: 6, y: 3 }
+            }
+          ).setOrigin(0.5).setDepth(4);
+        }
+        npcSprites.push({ info: npcInfo, sprite: sprite, nameLabel: nameLabel });
+      });
+    }
+
+    function createShootingMechanic(scene) {
+      projectiles = null;
+      enemyProjectiles = null;
+      enemySprites = [];
+      enemyWarningText = null;
+      lastProjectileTime = -Infinity;
+      playerHitPending = false;
+
+      const shooting = levelConfig.mechanics.shooting;
+      if (!shooting.enabled) return;
+
+      makeRectangleTexture(scene, "configured-projectile", 16, 6, shooting.color);
+      projectiles = scene.physics.add.group({ allowGravity: false });
+      const enemyOffense = levelConfig.enemies[0].offense;
+      makeRectangleTexture(scene, "configured-enemy-projectile", 14, 8, enemyOffense.color);
+      enemyProjectiles = scene.physics.add.group({ allowGravity: false });
+      enemyWarningText = scene.add.text(400, 112, "", {
+        fontSize: "20px",
+        fontFamily: "Arial",
+        fontStyle: "bold",
+        color: "#fef08a",
+        backgroundColor: "#7f1d1d",
+        padding: { x: 12, y: 7 },
+        wordWrap: { width: 720 }
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(25).setVisible(false);
+
+      scene.physics.add.collider(projectiles, platforms, destroyProjectileOnImpact);
+      scene.physics.add.collider(enemyProjectiles, platforms, destroyProjectileOnImpact);
+      storyBarriers.forEach(function (barrier) {
+        scene.physics.add.collider(projectiles, barrier, destroyProjectileOnImpact);
+        scene.physics.add.collider(enemyProjectiles, barrier, destroyProjectileOnImpact);
+      });
+      scene.physics.add.overlap(enemyProjectiles, player, hitPlayerWithEnemyProjectile);
+
+      scene.physics.world.on("worldbounds", function (body) {
+        const gameObject = body.gameObject;
+        if (gameObject &&
+            (gameObject.getData("isProjectile") || gameObject.getData("isEnemyProjectile"))) {
+          destroyProjectile(gameObject);
+        }
+      });
+
+      levelConfig.enemies.forEach(function (enemyInfo, index) {
+        const textureName = "configured-enemy-" + index;
+        makeRectangleTexture(
+          scene,
+          textureName,
+          enemyInfo.width,
+          enemyInfo.height,
+          enemyInfo.color
+        );
+
+        const enemySprite = scene.physics.add.staticSprite(
+          enemyInfo.x,
+          enemyInfo.y,
+          textureName
+        ).setDepth(3);
+        enemySprite.setData("health", enemyInfo.health);
+
+        const healthText = scene.add.text(enemyInfo.x, enemyInfo.y - 35, "", {
+          fontSize: "15px",
+          fontFamily: "Arial",
+          color: "#ffffff",
+          backgroundColor: "#7f1d1d",
+          padding: { x: 6, y: 3 }
+        }).setOrigin(0.5).setDepth(4);
+
+        const enemyEntry = {
+          info: enemyInfo,
+          sprite: enemySprite,
+          healthText: healthText,
+          lastAttackTime: -Infinity,
+          warningStartedAt: null,
+          hasCompletedFirstWarning: false
+        };
+        enemySprites.push(enemyEntry);
+        updateEnemyHealthText(enemyEntry);
+
+        scene.physics.add.collider(player, enemySprite);
+        scene.physics.add.collider(projectiles, enemySprite, hitConfiguredEnemy);
+      });
+    }
+
+    // Pressing the configured key fires in the last horizontal direction faced.
+    function fireProjectile() {
+      const shooting = levelConfig.mechanics.shooting;
+      if (!shooting.enabled || dialogueOpen || !projectiles) return;
+      if (gameScene.time.now - lastProjectileTime < shooting.cooldown) return;
+
+      lastProjectileTime = gameScene.time.now;
+      const projectile = projectiles.create(
+        player.x + playerFacing * (PLAYER_WIDTH / 2 + 10),
+        player.y,
+        "configured-projectile"
+      );
+      projectile.setDepth(4);
+      projectile.body.allowGravity = false;
+      projectile.setData("isProjectile", true);
+      projectile.setData("hasImpacted", false);
+      projectile.setCollideWorldBounds(true);
+      projectile.body.onWorldBounds = true;
+      projectile.setVelocityX(playerFacing * shooting.projectileSpeed);
+
+      gameScene.time.delayedCall(shooting.lifetime, function () {
+        destroyProjectile(projectile);
+      });
+    }
+
+    function destroyProjectile(projectile) {
+      if (!projectile || !projectile.active || projectile.getData("hasImpacted")) return false;
+      projectile.setData("hasImpacted", true);
+      if (projectile.body) projectile.body.enable = false;
+      projectile.setActive(false).setVisible(false);
+      projectile.destroy();
+      return true;
+    }
+
+    function destroyProjectileOnImpact(firstObject, secondObject) {
+      const candidates = [firstObject, secondObject];
+      const projectile = candidates.find(function (gameObject) {
+        return gameObject && typeof gameObject.getData === "function" &&
+          (gameObject.getData("isProjectile") || gameObject.getData("isEnemyProjectile"));
+      });
+      if (projectile) destroyProjectile(projectile);
+    }
+
+    function clearProjectiles() {
+      if (projectiles) projectiles.clear(true, true);
+      clearEnemyProjectiles();
+    }
+
+    function clearEnemyProjectiles() {
+      if (enemyProjectiles) enemyProjectiles.clear(true, true);
+      hideEnemyWarning();
+      enemySprites.forEach(function (enemyEntry) {
+        if (!enemyEntry.hasCompletedFirstWarning) enemyEntry.warningStartedAt = null;
+      });
+    }
+
+    function hitConfiguredEnemy(firstObject, secondObject) {
+      const projectile = firstObject && firstObject.getData("isProjectile")
+        ? firstObject
+        : secondObject;
+      const enemySprite = projectile === firstObject ? secondObject : firstObject;
+      if (!projectile || !enemySprite) return;
+      if (!enemySprite.body.enable || !destroyProjectile(projectile)) return;
+
+      const enemyEntry = enemySprites.find(function (entry) {
+        return entry.sprite === enemySprite;
+      });
+      if (!enemyEntry) return;
+
+      const shooting = levelConfig.mechanics.shooting;
+      const remainingHealth = Math.max(
+        0,
+        enemySprite.getData("health") - shooting.damage
+      );
+      enemySprite.setData("health", remainingHealth);
+      updateEnemyHealthText(enemyEntry);
+
+      if (remainingHealth === 0) defeatConfiguredEnemy(enemyEntry);
+    }
+
+    function updateEnemyOffense() {
+      if (!enemyProjectiles || dialogueOpen) return;
+
+      enemySprites.forEach(function (enemyEntry) {
+        const offense = enemyEntry.info.offense;
+        if (!offense.enabled || !enemyEntry.sprite.body.enable) return;
+
+        const playerInRange = Math.abs(player.x - enemyEntry.sprite.x) <= offense.range;
+        if (!playerInRange) {
+          // Leaving the activation range restarts an unfinished warning so the
+          // player always receives its full duration before the first attack.
+          if (!enemyEntry.hasCompletedFirstWarning) {
+            enemyEntry.warningStartedAt = null;
+            hideEnemyWarning();
+          }
+          return;
+        }
+
+        if (!enemyEntry.hasCompletedFirstWarning) {
+          if (enemyEntry.warningStartedAt === null) {
+            enemyEntry.warningStartedAt = gameScene.time.now;
+            enemyWarningText
+              .setText(offense.firstAttackWarning.text)
+              .setVisible(true);
+          }
+          if (gameScene.time.now - enemyEntry.warningStartedAt < offense.firstAttackWarning.duration) {
+            return;
+          }
+          enemyEntry.hasCompletedFirstWarning = true;
+          hideEnemyWarning();
+        }
+
+        if (gameScene.time.now - enemyEntry.lastAttackTime < offense.cooldown) return;
+
+        enemyEntry.lastAttackTime = gameScene.time.now;
+        const direction = player.x < enemyEntry.sprite.x ? -1 : 1;
+        const enemyProjectile = enemyProjectiles.create(
+          enemyEntry.sprite.x + direction * (enemyEntry.info.width / 2 + 9),
+          enemyEntry.sprite.y,
+          "configured-enemy-projectile"
+        );
+        enemyProjectile.setDepth(4);
+        enemyProjectile.body.allowGravity = false;
+        enemyProjectile.setData("isEnemyProjectile", true);
+        enemyProjectile.setData("hasImpacted", false);
+        enemyProjectile.setData("hitEffect", offense.hitEffect);
+        enemyProjectile.setCollideWorldBounds(true);
+        enemyProjectile.body.onWorldBounds = true;
+        enemyProjectile.setVelocityX(direction * offense.projectileSpeed);
+
+        gameScene.time.delayedCall(offense.lifetime, function () {
+          destroyProjectile(enemyProjectile);
+        });
+      });
+    }
+
+    function hideEnemyWarning() {
+      if (enemyWarningText) enemyWarningText.setVisible(false);
+    }
+
+    function hitPlayerWithEnemyProjectile(firstObject, secondObject) {
+      const enemyProjectile = firstObject && firstObject.getData("isEnemyProjectile")
+        ? firstObject
+        : secondObject;
+      if (!enemyProjectile || playerHitPending) return;
+
+      const hitEffect = enemyProjectile.getData("hitEffect");
+      if (!destroyProjectile(enemyProjectile)) return;
+      if (hitEffect !== "retryCheckpoint") return;
+
+      // Wait until Arcade Physics finishes this overlap callback before
+      // clearing groups or moving and re-enabling the player's body.
+      playerHitPending = true;
+      gameScene.time.delayedCall(0, function () {
+        clearProjectiles();
+        resetPlayerAfterFall();
+        playerHitPending = false;
+      });
+    }
+
+    function updateEnemyHealthText(enemyEntry) {
+      const health = enemyEntry.sprite.getData("health");
+      enemyEntry.healthText.setText(
+        enemyEntry.info.name + ": " + health + "/" + enemyEntry.info.health
+      );
+    }
+
+    function defeatConfiguredEnemy(enemyEntry) {
+      const result = BespokeStoryState.recordEnemyDefeat(
+        gameState,
+        enemyEntry.info.id,
+        enemyEntry.info.objectiveAfterDefeat,
+        enemyEntry.info.unlockRouteId
+      );
+      if (!result.ok) {
+        console.warn("[Platformer] The enemy defeat could not be saved:", result.errors);
+        return;
+      }
+
+      gameState = result.state;
+      clearEnemyProjectiles();
+      applyWorldState();
+    }
+
+    function createStoryWorld(scene) {
+      storyBarriers = [];
+      storyRoutePlatforms = [];
+
+      if (!levelConfig.storyWorld) {
+        return;
+      }
+
+      levelConfig.storyWorld.barriers.forEach(function (barrierInfo, index) {
+        const textureName = "story-barrier-" + index;
+        makeRectangleTexture(
+          scene,
+          textureName,
+          barrierInfo.width,
+          barrierInfo.height,
+          barrierInfo.color
+        );
+        const barrier = scene.physics.add.staticSprite(
+          barrierInfo.x,
+          barrierInfo.y,
+          textureName
+        );
+        barrier.info = barrierInfo;
+        barrier.requiredRouteId = barrierInfo.requiredRouteId;
+        storyBarriers.push(barrier);
+      });
+
+      levelConfig.storyWorld.routePlatforms.forEach(function (platformInfo, index) {
+        const textureName = "story-route-platform-" + index;
+        makeRectangleTexture(
+          scene,
+          textureName,
+          platformInfo.width,
+          platformInfo.height,
+          platformInfo.color
+        );
+        const routePlatform = platforms.create(
+          platformInfo.x,
+          platformInfo.y,
+          textureName
+        );
+        routePlatform.info = platformInfo;
+        routePlatform.requiredRouteId = platformInfo.requiredRouteId;
+        storyRoutePlatforms.push(routePlatform);
+      });
+    }
+
+    // Restore objectives, story routes, the barrier, and defeated enemies.
+    function applyWorldState() {
+      if (!gameState || !levelConfig.storyGraph) {
+        objectiveDisplay.hidden = true;
+        return;
+      }
+
+      objectiveDisplay.hidden = false;
+      objectiveDisplay.textContent = "Objective: " + gameState.currentObjective;
+
+      storyBarriers.forEach(function (barrier) {
+        if (gameState.unlockedRoutes.includes(barrier.requiredRouteId)) {
+          barrier.disableBody(true, true);
+        } else {
+          barrier.enableBody(false, barrier.info.x, barrier.info.y, true, true);
+        }
+      });
+
+      storyRoutePlatforms.forEach(function (routePlatform) {
+        if (gameState.unlockedRoutes.includes(routePlatform.requiredRouteId)) {
+          routePlatform.enableBody(
+            false,
+            routePlatform.info.x,
+            routePlatform.info.y,
+            true,
+            true
+          );
+          routePlatform.refreshBody();
+        } else {
+          routePlatform.disableBody(true, true);
+        }
+      });
+
+      enemySprites.forEach(function (enemyEntry) {
+        const defeated = gameState.defeatedEnemyIds.includes(enemyEntry.info.id);
+        if (defeated) {
+          enemyEntry.sprite.disableBody(true, false);
+          enemyEntry.sprite.setVisible(true).setTintFill(enemyEntry.info.disabledColor).setAlpha(0.45);
+          enemyEntry.healthText.setText(enemyEntry.info.disabledLabel);
+        } else {
+          enemyEntry.sprite.enableBody(
+            false,
+            enemyEntry.info.x,
+            enemyEntry.info.y,
+            true,
+            true
+          );
+          enemyEntry.sprite.refreshBody();
+          enemyEntry.sprite.clearTint().setAlpha(1);
+          enemyEntry.sprite.setData("health", enemyEntry.info.health);
+          updateEnemyHealthText(enemyEntry);
+        }
+      });
+    }
+
+    function getNearbyNpc() {
+      if (!player) {
+        return null;
+      }
+
+      return npcSprites.find(function (npcEntry) {
+        return Phaser.Math.Distance.Between(
+          player.x,
+          player.y,
+          npcEntry.sprite.x,
+          npcEntry.sprite.y
+        ) <= NPC_INTERACTION_DISTANCE;
+      });
+    }
+
+    // Locked-barrier hints are optional configuration and never unlock routes.
+    function getNearbyLockedBarrier() {
+      if (!player || !gameState) return null;
+
+      return storyBarriers.find(function (barrier) {
+        const lockedHint = barrier.info.lockedHint;
+        const isLocked = !gameState.unlockedRoutes.includes(barrier.requiredRouteId);
+        return lockedHint && isLocked && barrier.body && barrier.body.enable &&
+          Phaser.Math.Distance.Between(
+            player.x,
+            player.y,
+            barrier.x,
+            barrier.y
+          ) <= lockedHint.distance;
+      }) || null;
+    }
+
+    // Open a validated story node and freeze only the player's physics body.
+    function openDialogue(npcInfo) {
+      if (!validatedStoryGraph) {
+        console.warn("[Platformer] Dialogue was not opened because its story graph is invalid.");
+        return;
+      }
+
+      activeNpc = npcInfo;
+      dialogueOpen = true;
+      dialogueOpenedAt = Date.now();
+      player.setVelocity(0, 0);
+      player.body.moves = false;
+      interactionText.setVisible(false);
+
+      dialogueImage.setAttribute("aria-label", npcInfo.name + " portrait");
+      dialogueImage.style.backgroundColor = colorToCss(npcInfo.defaultColor);
+      dialogueImage.style.backgroundImage = npcInfo.uploadedImage
+        ? 'url("' + npcInfo.uploadedImage.src + '")'
+        : "none";
+      const completedState = (npcInfo.completedStates || []).find(function (stateInfo) {
+        return gameState.flags[stateInfo.flag] === true;
+      });
+      if (completedState) {
+        renderCompletedDialogue(
+          npcInfo,
+          completedState.nodeId,
+          completedState.buttonText
+        );
+        return;
+      }
+
+      renderDialogueNode(npcInfo, npcInfo.storyNodeId);
+    }
+
+    // Completed encounters show their saved result without applying effects again.
+    function renderCompletedDialogue(npcInfo, nodeId, buttonText) {
+      const node = validatedStoryGraph.nodeMap[nodeId];
+      if (!node) {
+        closeDialogue();
+        return;
+      }
+
+      dialogueName.textContent = node.speaker;
+      dialogueText.textContent = node.dialogue;
+      dialogueChoices.textContent = "";
+
+      const closeButton = document.createElement("button");
+      closeButton.type = "button";
+      closeButton.textContent = buttonText;
+      closeButton.addEventListener("click", closeDialogue);
+      dialogueChoices.appendChild(closeButton);
+      dialoguePanel.hidden = false;
+      closeButton.focus();
+    }
+
+    function renderDialogueNode(npcInfo, nodeId) {
+      const node = validatedStoryGraph.nodeMap[nodeId];
+      if (!node) {
+        console.warn("[Platformer] Missing dialogue node ignored:", nodeId);
+        closeDialogue();
+        return;
+      }
+
+      dialogueName.textContent = node.speaker;
+      dialogueText.textContent = node.dialogue;
+      dialogueChoices.textContent = "";
+
+      node.choices.forEach(function (choice) {
+        const choiceButton = document.createElement("button");
+        choiceButton.type = "button";
+        choiceButton.textContent = choice.text;
+        choiceButton.addEventListener("click", function () {
+          chooseDialogueResponse(npcInfo, node, choice);
+        });
+        dialogueChoices.appendChild(choiceButton);
+      });
+
+      dialoguePanel.hidden = false;
+      dialogueChoices.querySelector("button").focus();
+    }
+
+    function chooseDialogueResponse(npcInfo, node, choice) {
+      recordDialogueChoice(npcInfo, choice);
+      const result = BespokeStoryState.applyChoice(
+        gameState,
+        node.id,
+        choice.effects
+      );
+      if (!result.ok) {
+        console.warn("[Platformer] The dialogue choice could not be saved:", result.errors);
+        closeDialogue();
+        return;
+      }
+      gameState = result.state;
+      applyWorldState();
+
+      if (choice.nextNodeId) {
+        renderDialogueNode(npcInfo, choice.nextNodeId);
+        return;
+      }
+
+      closeDialogue();
+    }
+
+    function closeDialogue() {
+      dialoguePanel.hidden = true;
+      dialogueOpen = false;
+      activeNpc = null;
+      if (player) player.body.moves = true;
+    }
+
+    // Escape always closes dialogue. When a node has only one forward button,
+    // E, Enter, or Space activates it without disabling Phaser's keyboard.
+    document.addEventListener("keydown", function (event) {
+      if (!dialogueOpen || howToPlayDialog.open) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDialogue();
+        return;
+      }
+
+      const buttons = dialogueChoices.querySelectorAll("button");
+      const advancesSingleChoice = buttons.length === 1 &&
+        Date.now() - dialogueOpenedAt > 200 &&
+        (event.key === "Enter" || event.key === " " || event.key.toLowerCase() === "e");
+      if (advancesSingleChoice) {
+        event.preventDefault();
+        buttons[0].click();
+      }
+    });
+
+    // Record the selected response without changing the shared game request.
+    function recordDialogueChoice(npcInfo, choice) {
+      const storageKey = "bespokeDialogueChoices";
+      let savedChoices = {
+        schemaVersion: BespokeStoryState.SCHEMA_VERSION,
+        storyId: gameState.storyId,
+        runId: gameState.runId,
+        choices: []
+      };
+
+      try {
+        const savedValue = localStorage.getItem(storageKey);
+        savedChoices = savedValue ? JSON.parse(savedValue) : savedChoices;
+
+        if (!savedChoices || savedChoices.runId !== gameState.runId || !Array.isArray(savedChoices.choices)) {
+          savedChoices = {
+            schemaVersion: BespokeStoryState.SCHEMA_VERSION,
+            storyId: gameState.storyId,
+            runId: gameState.runId,
+            choices: []
+          };
+        }
+
+        savedChoices.choices.push({
+          npcId: npcInfo.id,
+          npcName: npcInfo.name,
+          choiceId: choice.id,
+          choiceText: choice.text,
+          selectedAt: new Date().toISOString()
+        });
+        localStorage.setItem(storageKey, JSON.stringify(savedChoices));
+      } catch (error) {
+        // Storage failures do not interrupt or crash the platformer.
+      }
+    }
+
+    function resetDialogueChoiceHistory() {
+      try {
+        localStorage.setItem("bespokeDialogueChoices", JSON.stringify({
+          schemaVersion: BespokeStoryState.SCHEMA_VERSION,
+          storyId: levelConfig.storyId,
+          runId: gameState.runId,
+          choices: []
+        }));
+      } catch (error) {
+        // Storage failures do not interrupt or crash the platformer.
+      }
+    }
+
+    function colorToCss(color) {
+      return "#" + color.toString(16).padStart(6, "0");
+    }
+
+    // Scale the image uniformly so it fits inside the fixed 32 by 44 player area.
+    function showSelectedPlayerImage() {
+      if (!gameScene || !player || !selectedPlayerImage) {
+        return;
+      }
+
+      if (playerVisual) {
+        playerVisual.destroy();
+      }
+
+      playerTextureNumber += 1;
+      const textureName = "uploaded-player-" + playerTextureNumber;
+      gameScene.textures.addImage(textureName, selectedPlayerImage);
+
+      const scale = Math.min(
+        PLAYER_WIDTH / selectedPlayerImage.naturalWidth,
+        PLAYER_HEIGHT / selectedPlayerImage.naturalHeight
+      );
+
+      playerVisual = gameScene.add.image(player.x, player.y, textureName);
+      playerVisual.setScale(scale);
+      player.setVisible(false);
+    }
+
+    function makeRectangleTexture(scene, key, width, height, color) {
+      const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
+      graphics.fillStyle(color, 1);
+      graphics.fillRect(0, 0, width, height);
+      graphics.generateTexture(key, width, height);
+      graphics.destroy();
+    }
+
+    function makeCircleTexture(scene, key, radius, color) {
+      const size = radius * 2;
+      const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
+      graphics.fillStyle(color, 1);
+      graphics.fillCircle(radius, radius, radius);
+      graphics.generateTexture(key, size, size);
+      graphics.destroy();
+    }
+  </script>
+</body>
+</html>

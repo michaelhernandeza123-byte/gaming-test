@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 170" role="img" aria-label="Friendly young whale">
+  <path d="M55 92Q80 35 185 48Q245 55 260 92Q235 118 170 123Q95 130 55 92Z" fill="#60a5fa" stroke="#172554" stroke-width="5"/>
+  <path d="M58 90Q26 55 12 77Q30 91 12 110Q38 121 62 101" fill="#3b82f6" stroke="#172554" stroke-width="5"/>
+  <path d="M145 119q20 33 55 20q-20-26-45-34" fill="#3b82f6"/>
+  <circle cx="220" cy="77" r="6" fill="#0f172a"/>
+  <path d="M242 96q-15 12-32 4" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M238 48q5-25 20-31m-20 31q-10-23-2-37" fill="none" stroke="#bae6fd" stroke-width="5" stroke-linecap="round"/>
+</svg>

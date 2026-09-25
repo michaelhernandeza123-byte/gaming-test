@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bespoke Gaming</title>
+
+  <style>
+    body {
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #a4b08f;
+      color: white;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .input-help {
+      color: #17231b;
+      line-height: 1.5;
+    }
+
+    #storyImport summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #storyImport summary:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 4px;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 12px 18px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #game {
+      display: none;
+      margin-top: 30px;
+      padding: 20px;
+      background: #1f2937;
+      border-radius: 10px;
+    }
+
+    .choice {
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+
+    #originalPrompt,
+    #sceneProgress {
+      color: #dbeafe;
+    }
+
+    #sceneVisual {
+      position: relative;
+      width: 100%;
+      min-height: 270px;
+      margin: 14px auto;
+      overflow: hidden;
+      border: 2px solid #93c5fd;
+      border-radius: 10px;
+      background-color: #164e63;
+      background-image: linear-gradient(#0e7490, #082f49);
+      background-position: center;
+      background-size: cover;
+    }
+
+    #storyCharacter {
+      position: absolute;
+      right: 5%;
+      bottom: 4%;
+      width: min(45%, 260px);
+      max-height: 85%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 8px rgb(0 0 0 / 35%));
+    }
+
+    #visualStatus {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      max-width: calc(100% - 24px);
+      margin: 0;
+      padding: 7px 9px;
+      border-radius: 6px;
+      background: rgb(15 23 42 / 85%);
+    }
+
+    #visualHelp {
+      color: #bfdbfe;
+      font-size: 14px;
+    }
+
+    #scene {
+      padding: 14px;
+      border-left: 4px solid #60a5fa;
+      background: #111827;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="../index.html" style="display: inline-block; margin-bottom: 18px; color: inherit;">Back to Bespoke Games</a>
+  <section id="request-message" hidden style="margin-bottom: 18px; padding: 14px; background: #7f1d1d; border-radius: 8px;">
+    <p id="request-message-text"></p>
+    <a href="../index.html" style="color: inherit; font-weight: bold;">Return to the launcher</a>
+  </section>
+  <h1>Bespoke Gaming</h1>
+  <p class="input-help"><label for="gameIdea">Describe an adventure</label></p>
+
+ <textarea
+  id="gameIdea"
+  aria-describedby="descriptionHelp supportedGenres"
+  oninput="updateGenerateButton()"
+  placeholder="Example: I want an underwater adventure."
+></textarea>
+<p id="descriptionHelp" class="input-help">
+  Your description selects a built-in adventure. Have a saved story file?
+  Use <strong>Open a saved story file</strong> below; typing its title here does not load it.
+</p>
+<p id="supportedGenres" class="supported-genres input-help">
+  Currently supports fantasy, underwater, and space adventures.
+</p>
+
+<button
+  id="generateButton"
+  onclick="generateGame()"
+  disabled
+>
+  Generate My Game
+</button>
+
+  <details id="storyImport" style="margin-top: 24px; padding: 16px; background: #1f2937; border-radius: 10px;">
+    <summary>Open a saved story file</summary>
+    <p id="storyFileHelp">Choose a saved adventure from your computer. A valid file starts automatically;
+      you do not need to type its title above or click Generate My Game afterward.</p>
+    <p id="storyFileExample">For <strong>The Song Beneath Glass Reef</strong>, open the project's
+      <strong>stories</strong> folder and choose <strong>song-beneath-glass-reef.story.json</strong>.
+      Play sample adventure opens a different story, <strong>The Lost Research Beacon</strong>.</p>
+    <p id="storyFileLimits">JSON only, up to 200 KB. Files are read on this device, not uploaded. Starting a valid import replaces the current narrative run.</p>
+    <label for="storyFile">Choose a story JSON file</label>
+    <input id="storyFile" type="file" accept=".json,application/json" aria-describedby="storyFileHelp storyFileExample storyFileLimits">
+    <div>
+      <button id="sampleStoryButton" type="button" onclick="playSampleStory()">Play sample adventure</button>
+      <button type="button" onclick="downloadSampleStory()">Download sample JSON</button>
+    </div>
+    <p id="importStatus" role="status" aria-live="polite"></p>
+    <p id="importError" role="alert" hidden style="padding: 12px; border: 2px solid #fca5a5;"></p>
+  </details>
+
+  <section id="game">
+    <h2 id="storyTitle" tabindex="-1">Your Story Begins</h2>
+    <h3>Choose carefully. Your decisions determine the ending</h3>
+    <p id="visualHelp">
+      Scene artwork is selected by the story. Images uploaded in the separate
+      platformer remain saved there and do not replace these story scenes.
+    </p>
+    <p id="originalPrompt"></p>
+    <p id="sceneProgress"></p>
+    <figure id="sceneVisual" role="img" aria-label="Underwater story scene">
+      <img id="storyCharacter" hidden alt="">
+      <figcaption id="visualStatus">Loading scene illustration…</figcaption>
+    </figure>
+    <p id="scene"></p>
+
+   <div id="firstChoices">
+  <button
+    id="firstChoice"
+    class="choice"
+    onclick="choose('first')"
+  >
+    Investigate the distress signal
+  </button>
+
+  <button
+    id="secondChoice"
+    class="choice"
+    onclick="choose('second')"
+  >
+    Repair the engines and escape
+  </button>
+    </div>
+    <p id="result"></p>
+    <button id="startNewStoryButton" type="button" hidden onclick="startNewStory()">
+      Start New Story
+    </button>
+</section>
+<script src="../shared/bespoke-game-request.js"></script>
+<script src="../shared/bespoke-story-format.js"></script>
+<script src="../shared/bespoke-story-sample.js"></script>
+<script>
+  let currentGenre = "space";
+  let currentRequest = null;
+  let activeUnderwaterConfig = null;
+  let underwaterState = null;
+  let originalPrompt = "";
+  let visualRenderId = 0;
+  let isImportedStory = false;
+  let pendingImportId = 0;
+
+  const NARRATIVE_PROGRESS_KEY = "bespokeNarrativeStoryProgress";
+  const IMPORTED_STORY_KEY = "bespokeImportedStory";
+  const IMPORTED_PROGRESS_KEY = "bespokeImportedStoryProgress";
+  const NARRATIVE_SCHEMA_VERSION = 1;
+  const UNDERWATER_KEYWORDS = [
+    "underwater", "ocean", "sea", "diver", "submarine", "reef",
+    "whale", "whales", "humpback", "orca"
+  ];
+  const WHIRLPOOL_KEYWORDS = ["whirlpool", "maelstrom", "vortex", "emergency"];
+
+  // Both underwater adventures are content-only configurations. The shared
+  // renderer below handles every scene, condition, choice, and ending.
+  const underwaterStoryConfigs = {
+    calm: {
+      schemaVersion: 1,
+      id: "underwater-calm-v1",
+      title: "The Quiet Blue",
+      startNodeId: "calm-arrival",
+      sceneCount: 6,
+      whaleEncounterNodeId: "calm-whale",
+      nodes: [
+        {
+          id: "calm-arrival",
+          text: "Sunlight follows your small submersible into a quiet blue canyon. A living reef glows below.",
+          visual: {
+            background: "assets/calm-ocean.svg",
+            backgroundAlt: "A small submersible descending through calm blue water"
+          },
+          choices: [
+            { id: "descend", text: "Descend toward the reef", nextNodeId: "calm-reef", effects: [] }
+          ]
+        },
+        {
+          id: "calm-reef",
+          text: "Two safe routes cross the reef, and you have time to study only one closely.",
+          visual: {
+            background: "assets/coral-reef.svg",
+            backgroundAlt: "Two paths crossing a colorful coral reef"
+          },
+          choices: [
+            {
+              id: "chart-current",
+              text: "Chart the gentle current",
+              nextNodeId: "calm-whale",
+              effects: [{ type: "setFlag", flag: "chartedCurrent", value: true }]
+            },
+            {
+              id: "study-ruins",
+              text: "Inspect the coral-covered ruins",
+              nextNodeId: "calm-whale",
+              effects: [{ type: "setFlag", flag: "studiedRuins", value: true }]
+            }
+          ]
+        },
+        {
+          id: "calm-whale",
+          text: "A young whale appears beside a drifting research buoy. A loose cable is caught around its fin.",
+          visual: {
+            background: "assets/whale-water.svg",
+            backgroundAlt: "Open blue water beside a drifting research buoy",
+            character: "assets/whale.svg",
+            characterAlt: "A young whale with a loose cable around its fin"
+          },
+          choices: [
+            {
+              id: "free-whale",
+              text: "Carefully free the whale",
+              nextNodeId: "calm-consequence",
+              effects: [{ type: "setFlag", flag: "helpedWhale", value: true }]
+            },
+            {
+              id: "observe-whale",
+              text: "Keep a respectful distance and observe",
+              nextNodeId: "calm-consequence",
+              effects: [{ type: "setFlag", flag: "observedWhale", value: true }]
+            }
+          ]
+        },
+        {
+          id: "calm-consequence",
+          text: "The canyon opens into a field of silver fish.",
+          visual: {
+            background: "assets/calm-ocean.svg",
+            backgroundAlt: "A calm underwater canyon filled with silver fish"
+          },
+          visualVariants: [
+            {
+              when: { flag: "chartedCurrent", equals: true },
+              background: "assets/current-route.svg",
+              backgroundAlt: "A bright current winding safely through silver fish"
+            },
+            {
+              when: { flag: "studiedRuins", equals: true },
+              background: "assets/ruins-route.svg",
+              backgroundAlt: "Ancient underwater markers revealing a passage through ruins"
+            }
+          ],
+          textVariants: [
+            {
+              when: { flag: "chartedCurrent", equals: true },
+              text: "Your current chart reveals a safe passage through the silver fish toward a hidden lagoon."
+            },
+            {
+              when: { flag: "studiedRuins", equals: true },
+              text: "Symbols from the ruins match markers ahead and reveal the entrance to a forgotten lagoon."
+            }
+          ],
+          choices: [
+            { id: "continue", text: "Continue to the lagoon", nextNodeId: "calm-final-choice", effects: [] }
+          ]
+        },
+        {
+          id: "calm-final-choice",
+          text: "The lagoon is untouched, but your oxygen window is closing. You must choose how to finish the expedition.",
+          visual: {
+            background: "assets/hidden-lagoon.svg",
+            backgroundAlt: "A hidden underwater lagoon surrounded by glowing coral"
+          },
+          choices: [
+            { id: "protect-lagoon", text: "Record the lagoon as a protected sanctuary", nextNodeId: "calm-sanctuary-ending", effects: [] },
+            { id: "return-home", text: "Return with your discoveries", nextNodeId: "calm-home-ending", effects: [] }
+          ]
+        },
+        {
+          id: "calm-sanctuary-ending",
+          ending: true,
+          text: "You protect the hidden lagoon and complete a peaceful expedition.",
+          visual: {
+            background: "assets/hidden-lagoon.svg",
+            backgroundAlt: "The protected hidden lagoon glowing peacefully",
+            character: "assets/whale.svg",
+            characterAlt: "A whale returning to the protected lagoon"
+          },
+          textVariants: [
+            {
+              when: { flag: "helpedWhale", equals: true },
+              text: "The freed whale returns with its pod as you mark the hidden lagoon as a protected sanctuary."
+            },
+            {
+              when: { flag: "observedWhale", equals: true },
+              text: "Your patient whale observations help establish the hidden lagoon as a protected sanctuary."
+            }
+          ],
+          choices: []
+        },
+        {
+          id: "calm-home-ending",
+          ending: true,
+          text: "You return safely with a valuable record of the reef.",
+          visual: {
+            background: "assets/surface-route.svg",
+            backgroundAlt: "A submersible returning toward sunlight at the ocean surface",
+            character: "assets/submersible.svg",
+            characterAlt: "The expedition submersible returning home"
+          },
+          textVariants: [
+            {
+              when: { flag: "helpedWhale", equals: true },
+              text: "The whale you freed escorts your submersible home, and your expedition becomes a story of trust."
+            },
+            {
+              when: { flag: "observedWhale", equals: true },
+              text: "You return safely with careful whale observations and a valuable record of the reef."
+            }
+          ],
+          choices: []
+        }
+      ]
+    },
+    emergency: {
+      schemaVersion: 1,
+      id: "underwater-whirlpool-v1",
+      title: "Whirlpool Emergency",
+      startNodeId: "emergency-alarm",
+      sceneCount: 6,
+      whaleEncounterNodeId: "emergency-whale",
+      nodes: [
+        {
+          id: "emergency-alarm",
+          text: "A whirlpool forms above the trench. Warning lights flash as the current pulls your submersible sideways.",
+          visual: {
+            background: "assets/whirlpool.svg",
+            backgroundAlt: "A dangerous underwater whirlpool forming above a dark trench"
+          },
+          choices: [
+            { id: "act", text: "Take emergency control", nextNodeId: "emergency-stabilize", effects: [] }
+          ]
+        },
+        {
+          id: "emergency-stabilize",
+          text: "You can protect the engines or gain speed, but there is not enough power to do both.",
+          visual: {
+            background: "assets/whirlpool.svg",
+            backgroundAlt: "Strong currents turning around the emergency submersible",
+            character: "assets/submersible.svg",
+            characterAlt: "A submersible with flashing emergency lights"
+          },
+          choices: [
+            {
+              id: "protect-engines",
+              text: "Shield the engines",
+              nextNodeId: "emergency-whale",
+              effects: [{ type: "setFlag", flag: "protectedEngines", value: true }]
+            },
+            {
+              id: "release-ballast",
+              text: "Release the emergency ballast",
+              nextNodeId: "emergency-whale",
+              effects: [{ type: "setFlag", flag: "releasedBallast", value: true }]
+            }
+          ]
+        },
+        {
+          id: "emergency-whale",
+          text: "A whale swims against the current beside you. It knows a route between the rocks, but debris blocks its path.",
+          visual: {
+            background: "assets/whale-water.svg",
+            backgroundAlt: "Fast dark water and debris beside a rocky trench",
+            character: "assets/whale.svg",
+            characterAlt: "A whale swimming against the dangerous current"
+          },
+          choices: [
+            {
+              id: "clear-debris",
+              text: "Use the submersible arm to clear the debris",
+              nextNodeId: "emergency-consequence",
+              effects: [{ type: "setFlag", flag: "helpedWhale", value: true }]
+            },
+            {
+              id: "follow-whale",
+              text: "Conserve power and follow from a distance",
+              nextNodeId: "emergency-consequence",
+              effects: [{ type: "setFlag", flag: "followedWhale", value: true }]
+            }
+          ]
+        },
+        {
+          id: "emergency-consequence",
+          text: "The whale leads you toward a narrow break in the trench wall.",
+          visual: {
+            background: "assets/trench-route.svg",
+            backgroundAlt: "A narrow passage through the underwater trench"
+          },
+          visualVariants: [
+            {
+              when: { flag: "protectedEngines", equals: true },
+              background: "assets/trench-route.svg",
+              backgroundAlt: "A steady submersible entering the protected trench route",
+              character: "assets/submersible.svg",
+              characterAlt: "The submersible moving with protected engines"
+            },
+            {
+              when: { flag: "releasedBallast", equals: true },
+              background: "assets/surface-route.svg",
+              backgroundAlt: "A lighter submersible rising quickly through the current",
+              character: "assets/submersible.svg",
+              characterAlt: "The submersible rising after releasing its ballast"
+            }
+          ],
+          textVariants: [
+            {
+              when: { flag: "protectedEngines", equals: true },
+              text: "Your protected engines hold steady while the whale leads you toward a narrow break in the trench wall."
+            },
+            {
+              when: { flag: "releasedBallast", equals: true },
+              text: "Without the ballast, your lighter submersible rises quickly toward the route the whale revealed."
+            }
+          ],
+          choices: [
+            { id: "continue", text: "Approach the escape route", nextNodeId: "emergency-final-choice", effects: [] }
+          ]
+        },
+        {
+          id: "emergency-final-choice",
+          text: "The whirlpool tightens. One route leads through the whale's rocky passage; another climbs along the outer current.",
+          visual: {
+            background: "assets/whirlpool.svg",
+            backgroundAlt: "The rocky passage and outer current beneath a tightening whirlpool",
+            character: "assets/whale.svg",
+            characterAlt: "The whale waiting near two possible escape routes"
+          },
+          choices: [
+            { id: "whale-route", text: "Take the whale's rocky passage", nextNodeId: "emergency-rescue-ending", effects: [] },
+            { id: "outer-current", text: "Ride the outer current upward", nextNodeId: "emergency-surface-ending", effects: [] }
+          ]
+        },
+        {
+          id: "emergency-rescue-ending",
+          ending: true,
+          text: "You escape through the trench and reach calm water.",
+          visual: {
+            background: "assets/trench-route.svg",
+            backgroundAlt: "Calm water beyond the narrow trench passage",
+            character: "assets/whale.svg",
+            characterAlt: "The whale guiding the submersible into calm water"
+          },
+          textVariants: [
+            {
+              when: { flag: "helpedWhale", equals: true },
+              text: "The whale waits for you, then guides your submersible through the trench to calm water."
+            },
+            {
+              when: { flag: "followedWhale", equals: true },
+              text: "By carefully following the whale's path, you slip through the trench and reach calm water."
+            }
+          ],
+          choices: []
+        },
+        {
+          id: "emergency-surface-ending",
+          ending: true,
+          text: "You break free of the outer current and surface beyond the whirlpool.",
+          visual: {
+            background: "assets/surface-route.svg",
+            backgroundAlt: "Sunlight above the ocean beyond the fading whirlpool",
+            character: "assets/submersible.svg",
+            characterAlt: "The submersible safely reaching the surface"
+          },
+          textVariants: [
+            {
+              when: { flag: "helpedWhale", equals: true },
+              text: "The whale pushes against the current beside you until both of you surface beyond the whirlpool."
+            },
+            {
+              when: { flag: "followedWhale", equals: true },
+              text: "The route you learned from the whale helps you ride the outer current and surface safely."
+            }
+          ],
+          choices: []
+        }
+      ]
+    }
+  };
+
+  function promptContainsAny(prompt, keywords) {
+    const words = prompt.toLowerCase();
+    return keywords.some(function (keyword) {
+      const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp("\\b" + safeKeyword + "\\b").test(words);
+    });
+  }
+
+  // A whale request counts as underwater. Emergency words select the urgent
+  // graph; every other recognized underwater request selects calm exploration.
+  function selectUnderwaterConfig(prompt) {
+    const hasUnderwaterDetail = promptContainsAny(prompt, UNDERWATER_KEYWORDS);
+    const hasEmergencyDetail = promptContainsAny(prompt, WHIRLPOOL_KEYWORDS);
+    if (!hasUnderwaterDetail && !hasEmergencyDetail) return null;
+    return hasEmergencyDetail
+      ? underwaterStoryConfigs.emergency
+      : underwaterStoryConfigs.calm;
+  }
+
+  // The same data contract validates built-in and imported stories.
+  function validateUnderwaterConfig(config) {
+    return BespokeStoryFormat.validate(config);
+  }
+
+  function createRunId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
+    }
+    return "narrative-run-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+
+  function createUnderwaterState(config, prompt) {
+    return {
+      schemaVersion: NARRATIVE_SCHEMA_VERSION,
+      storyId: config.id,
+      storySignature: JSON.stringify(config),
+      runId: createRunId(),
+      requestCreatedAt: currentRequest ? currentRequest.createdAt : "",
+      originalPrompt: prompt,
+      currentNodeId: config.startNodeId,
+      flags: {},
+      completedNodeIds: [],
+      visitedNodeIds: [config.startNodeId]
+    };
+  }
+
+  function isValidUnderwaterState(state, config, prompt) {
+    return Boolean(state) && state.schemaVersion === NARRATIVE_SCHEMA_VERSION &&
+      state.storyId === config.id && typeof state.runId === "string" && state.runId &&
+      ((!isImportedStory && state.storySignature === undefined) || state.storySignature === JSON.stringify(config)) &&
+      state.requestCreatedAt === (currentRequest ? currentRequest.createdAt : "") &&
+      state.originalPrompt === prompt && typeof state.currentNodeId === "string" &&
+      config.nodes.some(function (node) { return node.id === state.currentNodeId; }) &&
+      state.flags && typeof state.flags === "object" && !Array.isArray(state.flags) &&
+      Object.values(state.flags).every(function (value) { return typeof value === "boolean"; }) &&
+      Array.isArray(state.completedNodeIds) &&
+      Array.isArray(state.visitedNodeIds);
+  }
+
+  function saveUnderwaterState() {
+    try {
+      localStorage.setItem(isImportedStory ? IMPORTED_PROGRESS_KEY : NARRATIVE_PROGRESS_KEY, JSON.stringify(underwaterState));
+    } catch (error) {
+      console.warn("[Narrative] Underwater progress could not be saved:", error);
+    }
+  }
+
+  function loadUnderwaterState(config, prompt) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(isImportedStory ? IMPORTED_PROGRESS_KEY : NARRATIVE_PROGRESS_KEY));
+      return isValidUnderwaterState(saved, config, prompt) ? saved : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function conditionMatches(condition) {
+    return underwaterState.flags[condition.flag] === condition.equals;
+  }
+
+  function getConfiguredSceneText(node) {
+    const matchingVariant = (node.textVariants || []).find(function (variant) {
+      return conditionMatches(variant.when);
+    });
+    return matchingVariant ? matchingVariant.text : node.text;
+  }
+
+  function getConfiguredSceneVisual(node) {
+    const matchingVariant = (node.visualVariants || []).find(function (variant) {
+      return conditionMatches(variant.when);
+    });
+    return matchingVariant || node.visual;
+  }
+
+  // Narrator scene artwork is independent from the platformer's uploaded-image
+  // database. Rendering a story scene never reads, replaces, or deletes uploads.
+  function renderSceneVisual(node) {
+    const visual = getConfiguredSceneVisual(node);
+    const sceneVisual = document.getElementById("sceneVisual");
+    const storyCharacter = document.getElementById("storyCharacter");
+    const visualStatus = document.getElementById("visualStatus");
+    const thisRenderId = ++visualRenderId;
+
+    // This gradient is the readable fallback while an image loads or if it is missing.
+    sceneVisual.hidden = false;
+    sceneVisual.style.backgroundImage = "linear-gradient(#0e7490, #082f49)";
+    sceneVisual.setAttribute(
+      "aria-label",
+      visual.backgroundAlt + (visual.character ? ". " + visual.characterAlt : "")
+    );
+    visualStatus.textContent = "Loading scene illustration…";
+    visualStatus.hidden = false;
+    storyCharacter.hidden = true;
+    storyCharacter.removeAttribute("src");
+    storyCharacter.alt = "";
+
+    const backgroundLoader = new Image();
+    backgroundLoader.onload = function () {
+      if (thisRenderId !== visualRenderId) return;
+      sceneVisual.style.backgroundImage = 'url("' + visual.background + '")';
+      visualStatus.hidden = true;
+    };
+    backgroundLoader.onerror = function () {
+      if (thisRenderId !== visualRenderId) return;
+      visualStatus.textContent =
+        "Some scene artwork is unavailable. Using the built-in fallback; the story can continue.";
+      visualStatus.hidden = false;
+    };
+    backgroundLoader.src = visual.background;
+
+    if (visual.character) {
+      storyCharacter.onload = function () {
+        if (thisRenderId !== visualRenderId) return;
+        storyCharacter.hidden = false;
+      };
+      storyCharacter.onerror = function () {
+        if (thisRenderId !== visualRenderId) return;
+        storyCharacter.hidden = true;
+        visualStatus.textContent =
+          "Some scene artwork is unavailable. Using the built-in fallback; the story can continue.";
+        visualStatus.hidden = false;
+      };
+      storyCharacter.alt = visual.characterAlt;
+      storyCharacter.src = visual.character;
+    }
+  }
+
+  function renderUnderwaterScene() {
+    const validation = validateUnderwaterConfig(activeUnderwaterConfig);
+    if (!validation.ok) {
+      showRequestMessage("The underwater story could not start: " + validation.errors[0]);
+      return;
+    }
+
+    const node = validation.nodeMap[underwaterState.currentNodeId];
+    document.getElementById("storyTitle").textContent = activeUnderwaterConfig.title;
+    document.getElementById("originalPrompt").textContent =
+      (isImportedStory ? "Story file: " : "Your description: ") + underwaterState.originalPrompt;
+    document.getElementById("sceneProgress").textContent =
+      "Scene " + underwaterState.visitedNodeIds.length + " of " +
+      (validation.minScenes === validation.maxScenes ? "" : "up to ") + activeUnderwaterConfig.sceneCount;
+    document.getElementById("scene").textContent = getConfiguredSceneText(node);
+    renderSceneVisual(node);
+
+    const result = document.getElementById("result");
+    result.textContent = "";
+    if (node.ending) {
+      const endingHeading = document.createElement("strong");
+      endingHeading.textContent = "Ending reached: " + activeUnderwaterConfig.title;
+      result.appendChild(endingHeading);
+      return;
+    }
+
+    node.choices.forEach(function (choice) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "choice";
+      button.textContent = choice.text;
+      button.addEventListener("click", function () {
+        chooseUnderwaterOption(node, choice);
+      });
+      result.appendChild(button);
+    });
+  }
+
+  function chooseUnderwaterOption(node, choice) {
+    if (!underwaterState || underwaterState.currentNodeId !== node.id) return;
+    // A completed scene cannot apply its configured effects more than once.
+    if (!underwaterState.completedNodeIds.includes(node.id)) {
+      choice.effects.forEach(function (effect) {
+        if (effect.type === "setFlag") underwaterState.flags[effect.flag] = effect.value;
+      });
+      underwaterState.completedNodeIds.push(node.id);
+    }
+    underwaterState.currentNodeId = choice.nextNodeId;
+    if (!underwaterState.visitedNodeIds.includes(choice.nextNodeId)) {
+      underwaterState.visitedNodeIds.push(choice.nextNodeId);
+    }
+    saveUnderwaterState();
+    renderUnderwaterScene();
+  }
+
+  function beginUnderwaterStory(config, prompt, continueSaved) {
+    const validation = validateUnderwaterConfig(config);
+    if (!validation.ok) {
+      showRequestMessage("The story could not start: " + validation.errors[0]);
+      return;
+    }
+
+    activeUnderwaterConfig = config;
+    originalPrompt = prompt;
+    document.getElementById("visualHelp").hidden = false;
+    underwaterState = continueSaved ? loadUnderwaterState(config, prompt) : null;
+    if (!underwaterState) {
+      underwaterState = createUnderwaterState(config, prompt);
+      saveUnderwaterState();
+    }
+    document.getElementById("startNewStoryButton").hidden = false;
+    renderUnderwaterScene();
+  }
+
+  // Start New Story creates a fresh run while retaining the exact description.
+  function startNewStory() {
+    if (!activeUnderwaterConfig || !originalPrompt) {
+      generateGame();
+      return;
+    }
+    if (!isImportedStory) document.getElementById("gameIdea").value = originalPrompt;
+    underwaterState = createUnderwaterState(activeUnderwaterConfig, originalPrompt);
+    saveUnderwaterState();
+    renderUnderwaterScene();
+  }
+
+  function showImportError(messages) {
+    const error = document.getElementById("importError");
+    error.textContent = "Story not loaded. " + messages.slice(0, 5).join(" ") +
+      " Your current story has not been changed.";
+    error.hidden = false;
+    document.getElementById("importStatus").textContent = "";
+  }
+
+  function launchImportedStory(config, continueSaved) {
+    const checked = validateUnderwaterConfig(config);
+    if (!checked.ok) { showImportError(checked.errors); return false; }
+    pendingImportId++;
+    isImportedStory = true;
+    currentGenre = "imported";
+    document.getElementById("request-message").hidden = true;
+    document.getElementById("importError").hidden = true;
+    document.getElementById("game").style.display = "block";
+    document.getElementById("firstChoices").style.display = "none";
+    beginUnderwaterStory(config, config.title, continueSaved);
+    let message = "Loaded: " + config.title + ". Validated links and endings. Progress is saved in this browser when storage is available.";
+    try {
+      localStorage.setItem(IMPORTED_STORY_KEY, JSON.stringify({
+        config: config,
+        requestCreatedAt: currentRequest ? currentRequest.createdAt : ""
+      }));
+    } catch (error) {
+      message += " Storage is unavailable: keep this tab open or reimport the file after reloading.";
+    }
+    document.getElementById("importStatus").textContent = message;
+    document.getElementById("storyTitle").focus();
+    return true;
+  }
+
+  async function importStoryFile(event) {
+    const file = event.target.files[0];
+    const thisImportId = ++pendingImportId;
+    if (!file) return;
+    if (file.size > BespokeStoryFormat.maxBytes) {
+      showImportError(["Choose a JSON story file smaller than 200 KB."]);
+      event.target.value = "";
+      return;
+    }
+    document.getElementById("importStatus").textContent = "Checking story file…";
+    try {
+      const source = await file.text();
+      if (thisImportId !== pendingImportId) return;
+      const checked = BespokeStoryFormat.parse(source);
+      if (!checked.ok) showImportError(checked.errors);
+      else launchImportedStory(checked.config, false);
+    } catch (error) {
+      if (thisImportId === pendingImportId) showImportError(["The file could not be read. Try selecting it again."]);
+    } finally {
+      // Selecting the same file again must fire another change event.
+      event.target.value = "";
+    }
+  }
+
+  function playSampleStory() {
+    // Clone through the same parser used for files; the sample gets no special engine behavior.
+    const checked = BespokeStoryFormat.parse(JSON.stringify(BespokeSampleStory));
+    if (checked.ok) launchImportedStory(checked.config, false);
+    else showImportError(checked.errors);
+  }
+
+  function downloadSampleStory() {
+    const blob = new Blob([JSON.stringify(BespokeSampleStory, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "lost-research-beacon.story.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function restoreImportedStory() {
+    try {
+      const source = localStorage.getItem(IMPORTED_STORY_KEY);
+      if (!source || source.length > BespokeStoryFormat.maxBytes + 1000) return false;
+      const saved = JSON.parse(source);
+      // A fresh launcher request always takes precedence over an older imported story.
+      if (!saved || saved.requestCreatedAt !== (currentRequest ? currentRequest.createdAt : "")) return false;
+      const checked = BespokeStoryFormat.parse(JSON.stringify(saved.config));
+      return checked.ok && launchImportedStory(checked.config, true);
+    } catch (error) { return false; }
+  }
+
+  // Load and validate the shared request before using its narrative prompt.
+  window.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("storyFile").addEventListener("change", importStoryFile);
+    if (!window.BespokeGameRequest) {
+      showRequestMessage("The shared game request could not be loaded.");
+      return;
+    }
+
+    const result = BespokeGameRequest.load("narrative");
+    currentRequest = result.ok ? result.request : null;
+    if (restoreImportedStory()) return;
+
+    if (!result.ok) {
+      showRequestMessage(result.error);
+      return;
+    }
+
+    // Pass the validated prompt into the existing narrative-generation logic.
+    currentRequest = result.request;
+    document.getElementById("gameIdea").value = result.request.prompt;
+    updateGenerateButton();
+    generateGame({ continueSaved: true });
+  });
+
+  function showRequestMessage(message) {
+    document.getElementById("request-message-text").textContent = message;
+    document.getElementById("request-message").hidden = false;
+  }
+
+  function updateGenerateButton() {
+    const idea = document.getElementById("gameIdea").value;
+    const generateButton = document.getElementById("generateButton");
+
+    generateButton.disabled = idea.trim().length === 0;
+  }
+
+  function generateGame(options) {
+    const idea = document.getElementById("gameIdea").value;
+    const lowerIdea = idea.toLowerCase();
+
+    if (!idea.trim()) {
+      alert("Describe the game you want first.");
+      return;
+    }
+
+    pendingImportId++;
+    isImportedStory = false;
+    try { localStorage.removeItem(IMPORTED_STORY_KEY); } catch (error) { /* Storage may be disabled. */ }
+    document.getElementById("request-message").hidden = true;
+    document.getElementById("importStatus").textContent = "";
+    document.getElementById("importError").hidden = true;
+    document.getElementById("storyTitle").textContent = "Your Story Begins";
+    visualRenderId++;
+
+    const game = document.getElementById("game");
+    const scene = document.getElementById("scene");
+    const result = document.getElementById("result");
+    const firstChoices = document.getElementById("firstChoices");
+    const firstButton = document.getElementById("firstChoice");
+    const secondButton = document.getElementById("secondChoice");
+
+    game.style.display = "block";
+    result.textContent = "";
+    firstChoices.style.display = "block";
+    document.getElementById("originalPrompt").textContent = "";
+    document.getElementById("sceneProgress").textContent = "";
+    document.getElementById("visualHelp").hidden = true;
+    document.getElementById("sceneVisual").hidden = true;
+    document.getElementById("sceneVisual").style.backgroundImage =
+      "linear-gradient(#0e7490, #082f49)";
+    document.getElementById("storyCharacter").hidden = true;
+
+const selectedUnderwaterConfig = selectUnderwaterConfig(idea);
+if (selectedUnderwaterConfig) {
+  currentGenre = "underwater";
+  firstChoices.style.display = "none";
+  beginUnderwaterStory(
+    selectedUnderwaterConfig,
+    idea,
+    Boolean(options && options.continueSaved)
+  );
+  return;
+} else if (
+  lowerIdea.includes("fantasy") ||
+  lowerIdea.includes("dragon") ||
+  lowerIdea.includes("castle") ||
+  lowerIdea.includes("wizard") ||
+  lowerIdea.includes("magic")
+) {
+  currentGenre = "fantasy";
+  activeUnderwaterConfig = null;
+  document.getElementById("startNewStoryButton").hidden = true;
+
+  scene.textContent =
+    "Your requested adventure begins: " +
+    idea +
+    " You arrive at a burning castle as a dragon circles overhead.";
+
+  firstButton.textContent = "Enter the castle";
+  secondButton.textContent = "Search the enchanted forest";
+} else if (
+  lowerIdea.includes("space") ||
+  lowerIdea.includes("spaceship") ||
+  lowerIdea.includes("planet") ||
+  lowerIdea.includes("alien") ||
+  lowerIdea.includes("galaxy")
+) {
+  currentGenre = "space";
+  activeUnderwaterConfig = null;
+  document.getElementById("startNewStoryButton").hidden = true;
+
+  scene.textContent =
+    "Your requested adventure begins: " +
+    idea +
+    " You awaken to alarms as an unknown signal reaches your ship.";
+
+  firstButton.textContent = "Investigate the distress signal";
+  secondButton.textContent = "Repair the engines and escape";
+} else {
+  currentGenre = "unsupported";
+  activeUnderwaterConfig = null;
+  document.getElementById("startNewStoryButton").hidden = true;
+
+  scene.textContent =
+    "I couldn't identify that adventure yet. " +
+    "Try including fantasy, dragon, ocean, underwater, space, or spaceship.";
+
+  firstChoices.style.display = "none";
+}
+  }
+
+
+
+
+
+
+
+
+
+  function choose(choice) {
+    const result = document.getElementById("result");
+
+    document.getElementById("firstChoices").style.display = "none";
+
+    if (currentGenre === "fantasy") {
+      if (choice === "first") {
+        result.innerHTML = `
+          <p>
+            Inside the castle, you discover a wounded knight guarding
+            a glowing dragon egg.
+          </p>
+
+          <button
+            class="choice"
+            onclick="finishChoice('protectEgg')"
+          >
+            Protect the dragon egg
+          </button>
+
+          <button
+            class="choice"
+            onclick="finishChoice('takeEgg')"
+          >
+            Take the egg
+          </button>
+        `;
+      } else {
+        result.innerHTML = `
+          <p>
+            In the forest, a masked witch offers to reveal
+            the dragon's weakness.
+          </p>
+
+          <button
+            class="choice"
+            onclick="finishChoice('trustWitch')"
+          >
+            Trust the witch
+          </button>
+
+          <button
+            class="choice"
+            onclick="finishChoice('refuseWitch')"
+          >
+            Refuse her offer
+          </button>
+        `;
+      }
+    } else if (currentGenre === "underwater") {
+      if (choice === "first") {
+        result.innerHTML = `
+          <p>
+            You are a diver lost in the ocean. You have a harpoon
+            with ten shots. A strange sea creature approaches,
+            bearing its teeth.
+          </p>
+
+          <button
+            class="choice"
+            onclick="finishChoice('flee')"
+          >
+            Flee from the creature
+          </button>
+
+          <button
+            class="choice"
+            onclick="finishChoice('hide')"
+          >
+            Hide inside a shipwreck
+          </button>
+        `;
+      } else {
+        result.innerHTML = `
+          <p>
+            You raise your harpoon as the creature circles
+            through the dark water.
+          </p>
+
+          <button
+            class="choice"
+            onclick="finishChoice('fireHarpoon')"
+          >
+            Fire the harpoon
+          </button>
+
+          <button
+            class="choice"
+            onclick="finishChoice('observeCreature')"
+          >
+            Observe the creature
+          </button>
+        `;
+      }
+    } else {
+      if (choice === "first") {
+        result.innerHTML = `
+          <p>
+            You trace the signal to a sealed section of the ship.
+            Something knocks from inside.
+          </p>
+
+          <button
+            class="choice"
+            onclick="finishChoice('open')"
+          >
+            Open the sealed door
+          </button>
+
+          <button
+            class="choice"
+            onclick="finishChoice('seal')"
+          >
+            Seal the section permanently
+          </button>
+        `;
+      } else {
+        result.innerHTML = `
+          <p>
+            The engines ignite—but another vessel appears
+            directly in your path.
+          </p>
+
+          <button
+            class="choice"
+            onclick="finishChoice('contact')"
+          >
+            Contact the unknown vessel
+          </button>
+
+          <button
+            class="choice"
+            onclick="finishChoice('evade')"
+          >
+            Take evasive action
+          </button>
+        `;
+      }
+    }
+  }
+
+  function finishChoice(choice) {
+    const result = document.getElementById("result");
+    let ending = "";
+
+    if (choice === "open") {
+      ending =
+        "The door opens. Inside, you discover a survivor carrying a map to a hidden world.";
+    } else if (choice === "seal") {
+      ending =
+        "You seal the section. The knocking stops—but begins again beneath your feet.";
+    } else if (choice === "contact") {
+      ending =
+        "The vessel answers. Its captain claims to know why your crew disappeared.";
+    } else if (choice === "evade") {
+      ending =
+        "You evade the vessel and enter hyperspace, unaware that something followed you.";
+    } else if (choice === "protectEgg") {
+      ending =
+        "The dragon recognizes your mercy and appoints you guardian of its last egg.";
+    } else if (choice === "takeEgg") {
+      ending =
+        "You escape with the egg, but its mother marks you with a curse.";
+    } else if (choice === "trustWitch") {
+      ending =
+        "The witch leads you beneath the castle, where the missing royal family waits.";
+    } else if (choice === "refuseWitch") {
+      ending =
+        "You refuse her magic and discover your own hidden power awakening.";
+    } else if (choice === "flee") {
+      ending =
+        "You swim toward the surface. The creature follows, but sunlight drives it back into the depths.";
+    } else if (choice === "hide") {
+      ending =
+        "You enter the shipwreck and discover an abandoned underwater research station.";
+    } else if (choice === "fireHarpoon") {
+      ending =
+        "The harpoon strikes the creature. It retreats, revealing a glowing city hidden beneath it.";
+    } else if (choice === "observeCreature") {
+      ending =
+        "You lower your weapon. The creature stops threatening you and guides you toward an underwater sanctuary.";
+    }
+
+    result.innerHTML = `
+      <p>${ending}</p>
+
+      <button onclick="playAgain()">
+        Play Again
+      </button>
+    `;
+  }
+
+  function playAgain() {
+    document.getElementById("gameIdea").value = "";
+    document.getElementById("game").style.display = "none";
+    document.getElementById("scene").textContent = "";
+    document.getElementById("result").textContent = "";
+    document.getElementById("firstChoices").style.display = "block";
+    document.getElementById("gameIdea").focus();
+
+    updateGenerateButton();
+  }
+
+  updateGenerateButton();
+</script>
+ 
+</body>
+</html>

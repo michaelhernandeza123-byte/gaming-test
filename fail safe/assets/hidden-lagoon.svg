@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Glowing hidden underwater lagoon">
+  <defs><radialGradient id="glow"><stop stop-color="#99f6e4"/><stop offset=".55" stop-color="#0891b2"/><stop offset="1" stop-color="#164e63"/></radialGradient></defs>
+  <rect width="640" height="300" fill="url(#glow)"/>
+  <path d="M0 0Q90 95 150 165Q210 90 320 35Q430 90 490 165Q555 95 640 0V300H0Z" fill="#0f172a" fill-opacity=".42"/>
+  <ellipse cx="320" cy="255" rx="210" ry="35" fill="#14b8a6" opacity=".7"/>
+  <g fill="#f0abfc"><circle cx="180" cy="235" r="18"/><circle cx="450" cy="245" r="23"/></g>
+</svg>

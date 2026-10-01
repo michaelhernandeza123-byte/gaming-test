@@ -18,6 +18,7 @@
       margin: 0;
       min-height: 100vh;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       place-items: center;
       padding: 24px;
       font-family: Arial, sans-serif;
@@ -27,6 +28,8 @@
 
     main {
       width: min(100%, 840px);
+      /* A prior landscape canvas must not hold this grid child wider on rotation. */
+      min-width: 0;
       text-align: center;
     }
 
@@ -132,6 +135,7 @@
 
     #game-container {
       display: none;
+      max-width: 100%;
       overflow: hidden;
       border: 4px solid #e2e8f0;
       border-radius: 12px;
@@ -218,6 +222,23 @@
     #how-to-play-controls li {
       margin: 10px 0;
     }
+
+    #touch-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin: 12px auto;
+      max-width: 800px;
+    }
+    #touch-controls button {
+      min-height: 48px;
+      min-width: 64px;
+      touch-action: none;
+      user-select: none;
+    }
+    #touch-controls button[aria-pressed="true"] { background: #6d28d9; }
+    #touch-controls:empty { display: none; }
 
     canvas {
       display: block;
@@ -329,8 +350,11 @@
         <button id="start-new-story-button" type="button">Start New Story</button>
       </div>
     </div>
+    <section id="play-area" aria-label="Adventure play area">
     <p id="objective-display" hidden></p>
     <div id="game-container"></div>
+    <div id="touch-controls" role="group" aria-label="Touch game controls"></div>
+    </section>
 
     <section id="dialogue-panel" hidden aria-live="polite">
       <div id="dialogue-header">
@@ -362,6 +386,7 @@
 
   <script src="../shared/bespoke-game-request.js"></script>
   <script src="../shared/bespoke-story-state.js"></script>
+  <script src="../shared/bespoke-touch-controls.js"></script>
   <script>
     // Each level uses the same game engine with different colors and platform layouts.
     const defaultLevelConfig = {
@@ -948,6 +973,7 @@
     let enemySprites = [];
     let enemyWarningText;
     let controlKeys = {};
+    let touchControls;
     let lastProjectileTime = -Infinity;
     let playerFacing = 1;
     let playerHitPending = false;
@@ -998,7 +1024,8 @@
             })) {
           errors.push("Template " + template.id + " has invalid recognized keywords.");
         }
-        (template.recognizedKeywords || []).forEach(function (keyword) {
+        // Invalid keyword fields are reported above; only arrays can be checked for duplicates.
+        (Array.isArray(template.recognizedKeywords) ? template.recognizedKeywords : []).forEach(function (keyword) {
           if (seenKeywords.has(keyword)) errors.push("Recognized keywords must belong to only one template.");
           seenKeywords.add(keyword);
         });
@@ -1774,18 +1801,30 @@
           return scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[keyName]);
         });
       });
+      if (!touchControls) {
+        touchControls = BespokeTouchControls.create(
+          document.getElementById("touch-controls"), CONTROL_BINDINGS,
+          selectedTemplate.allowedMechanics,
+          function () {
+            return Boolean(gameScene && !dialogueOpen && !howToPlayDialog.open &&
+              !newStoryConfirmation.open && !document.hidden && gameScene.scene.isActive());
+          }
+        );
+      }
     }
 
     function isControlDown(bindingId) {
+      const touchDown = touchControls && touchControls.isDown(bindingId);
       return (controlKeys[bindingId] || []).some(function (key) {
         return key.isDown;
-      });
+      }) || touchDown;
     }
 
     function isControlJustDown(bindingId) {
+      const touchDown = touchControls && touchControls.justDown(bindingId);
       return (controlKeys[bindingId] || []).some(function (key) {
         return Phaser.Input.Keyboard.JustDown(key);
-      });
+      }) || touchDown;
     }
 
     function renderHowToPlayControls() {
@@ -1804,6 +1843,7 @@
 
     function openHowToPlay() {
       if (!gameScene || howToPlayDialog.open) return;
+      if (touchControls) touchControls.clear();
 
       renderHowToPlayControls();
       if (player && player.body) player.setVelocityX(0);
@@ -1819,7 +1859,48 @@
       if (!howToPlayDialog.open) return;
       howToPlayDialog.close();
       if (gameScene) gameScene.scene.resume();
+      fitTouchPlayArea(true);
     }
+
+    // Resize only the displayed canvas, never Phaser's world or physics size.
+    // Measure wrapped controls/objective separately so narrowing the canvas does
+    // not make its controls wrap again and create a sizing feedback loop.
+    function fitTouchPlayArea(moveToGame) {
+      const area = document.getElementById("play-area");
+      const canvas = gameContainer.querySelector("canvas");
+      if (!canvas) return;
+      if (!window.matchMedia("(any-pointer: coarse)").matches) {
+        gameContainer.style.width = "";
+        gameContainer.style.marginInline = "";
+        area.style.minHeight = "";
+        return;
+      }
+      const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const controls = document.getElementById("touch-controls");
+      const objectiveHeight = objectiveDisplay.hidden ? 0 : objectiveDisplay.getBoundingClientRect().height + 10;
+      const availableHeight = viewportHeight - objectiveHeight - controls.getBoundingClientRect().height - 24 - 8 - 16;
+      const displayWidth = Math.max(1, Math.min(config.width, area.clientWidth - 8, availableHeight * config.width / config.height));
+      gameContainer.style.width = (displayWidth + 8) + "px";
+      gameContainer.style.marginInline = "auto";
+      area.style.minHeight = (viewportHeight - 8) + "px";
+      const focused = document.activeElement;
+      const editing = focused && /^(INPUT|TEXTAREA|SELECT)$/.test(focused.tagName);
+      if (moveToGame && !dialogueOpen && !howToPlayDialog.open && !newStoryConfirmation.open && !editing) {
+        area.scrollIntoView({ block: "start", behavior: "instant" });
+      }
+    }
+    let lastLayoutWidth = window.innerWidth;
+    function updateTouchLayout() {
+      const rotated = lastLayoutWidth !== window.innerWidth;
+      lastLayoutWidth = window.innerWidth;
+      const area = document.getElementById("play-area").getBoundingClientRect();
+      fitTouchPlayArea(rotated && area.top < window.innerHeight && area.bottom > 0);
+    }
+    window.addEventListener("resize", updateTouchLayout);
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", updateTouchLayout);
+    const playAreaObserver = new ResizeObserver(function () { fitTouchPlayArea(false); });
+    playAreaObserver.observe(document.getElementById("touch-controls"));
+    playAreaObserver.observe(objectiveDisplay);
 
     howToPlayButton.addEventListener("click", openHowToPlay);
     startAdventureButton.addEventListener("click", closeHowToPlay);
@@ -1853,6 +1934,7 @@
     retryCheckpointButton.addEventListener("click", retryFromCheckpoint);
 
     startNewStoryButton.addEventListener("click", function () {
+      if (touchControls) touchControls.clear();
       newStoryConfirmation.showModal();
     });
 
@@ -2256,6 +2338,8 @@
         return;
       }
 
+      // Consume each interaction tap now, even when no character is nearby.
+      const wantsToInteract = isControlJustDown("interact");
       const nearbyNpc = getNearbyNpc();
       const nearbyLockedBarrier = nearbyNpc ? null : getNearbyLockedBarrier();
 
@@ -2266,7 +2350,7 @@
           getControlKeyNames(CONTROL_BINDINGS.interact)[0]
         );
         interactionText.setText("Press " + interactionKey + " to talk to " + nearbyNpc.info.name);
-        if (isControlJustDown("interact")) {
+        if (wantsToInteract) {
           openDialogue(nearbyNpc.info);
           return;
         }
@@ -2316,6 +2400,7 @@
 
     // A new story clears its checkpoint; a normal retry keeps it active.
     function resetLevelAttempt(clearCheckpoint) {
+      if (touchControls) touchControls.clear();
       closeDialogue();
       clearProjectiles();
       if (clearCheckpoint) {
@@ -2412,6 +2497,7 @@
 
     // Falling moves the player to the active checkpoint without touching story state.
     function resetPlayerAfterFall() {
+      if (touchControls) touchControls.clear();
       clearEnemyProjectiles();
       const resetPoint = activeCheckpoint || getWorldInfo().start;
       player.enableBody(true, resetPoint.x, resetPoint.y, true, true);
@@ -2876,6 +2962,7 @@
       }
 
       activeNpc = npcInfo;
+      if (touchControls) touchControls.clear();
       dialogueOpen = true;
       dialogueOpenedAt = Date.now();
       player.setVelocity(0, 0);

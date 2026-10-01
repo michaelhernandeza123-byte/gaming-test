@@ -167,10 +167,11 @@
   function validateStoryGraph(graph) {
     const errors = [];
     const warnings = [];
-    const nodeMap = {};
+    // Only declared nodes belong in this lookup; inherited object names are not scenes.
+    const nodeMap = Object.create(null);
 
     if (!isPlainObject(graph) || !Array.isArray(graph.nodes)) {
-      return { ok: false, errors: ["The story graph must contain a nodes array."], warnings: [], nodeMap: {} };
+      return { ok: false, errors: ["The story graph must contain a nodes array."], warnings: [], nodeMap: nodeMap };
     }
 
     graph.nodes.forEach(function (node, nodeIndex) {

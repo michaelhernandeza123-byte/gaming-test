@@ -7,7 +7,7 @@ the bundled Phaser 3.80.1 engine. No package installation or API key is needed.
 
 ## Exact public-repository contents
 
-Include only these 22 files, preserving their names and folders:
+Include only these 23 website files, preserving their names and folders:
 
 ```text
 README.md
@@ -29,6 +29,7 @@ shared/bespoke-game-request.js
 shared/bespoke-story-format.js
 shared/bespoke-story-sample.js
 shared/bespoke-story-state.js
+shared/bespoke-touch-controls.js
 stories/song-beneath-glass-reef.story.json
 vendor/phaser-3.80.1.min.js
 vendor/PHASER-LICENSE.md

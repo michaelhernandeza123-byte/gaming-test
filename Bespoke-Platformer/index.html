@@ -2249,7 +2249,8 @@
       createStoryWorld(this);
 
       // Player: the same black fallback rectangle and physics body used by every level.
-      player = this.physics.add.sprite(worldInfo.start.x, worldInfo.start.y, "player");
+      const spawnPoint = getSavedCheckpoint() || worldInfo.start;
+      player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, "player");
       player.setCollideWorldBounds(true);
       player.setBounce(0.05);
       this.physics.add.collider(player, platforms);
@@ -2457,9 +2458,27 @@
       });
     }
 
+    function isCheckpointRouteReady(checkpoint) {
+      return !Array.isArray(checkpoint.requiredAnyRoutes) ||
+        checkpoint.requiredAnyRoutes.some(function (routeId) {
+          return gameState && gameState.unlockedRoutes.includes(routeId);
+        });
+    }
+
+    // The save stores only an optional ID, never coordinates. Old saves need no
+    // migration; ignore a bad hint without discarding their valid story progress.
+    function getSavedCheckpoint() {
+      if (!validatedLevelConfig || !gameState || typeof gameState.activeCheckpointId !== "string") {
+        return null;
+      }
+      return (levelConfig.checkpoints || []).find(function (checkpoint) {
+        return checkpoint.id === gameState.activeCheckpointId && isCheckpointRouteReady(checkpoint);
+      }) || null;
+    }
+
     function createCheckpointMarkers(scene) {
       checkpointMarkers = [];
-      activeCheckpoint = null;
+      activeCheckpoint = getSavedCheckpoint();
 
       (levelConfig.checkpoints || []).forEach(function (checkpoint) {
         const marker = scene.add.rectangle(
@@ -2470,6 +2489,7 @@
           checkpoint.color,
           1
         ).setDepth(3);
+        if (checkpoint === activeCheckpoint) marker.setFillStyle(0x22c55e, 1);
         checkpointMarkers.push({ info: checkpoint, marker: marker });
       });
     }
@@ -2477,10 +2497,7 @@
     function updateCheckpoint() {
       checkpointMarkers.forEach(function (entry) {
         const activation = entry.info.activation;
-        const routeReady = !Array.isArray(entry.info.requiredAnyRoutes) ||
-          entry.info.requiredAnyRoutes.some(function (routeId) {
-            return gameState && gameState.unlockedRoutes.includes(routeId);
-          });
+        const routeReady = isCheckpointRouteReady(entry.info);
         const insideActivation =
           routeReady &&
           player.x >= activation.x &&
@@ -2491,6 +2508,14 @@
         if (insideActivation && activeCheckpoint !== entry.info) {
           activeCheckpoint = entry.info;
           entry.marker.setFillStyle(0x22c55e, 1);
+          // Persist once on activation, alongside this run's existing choices.
+          if (gameState) {
+            gameState.activeCheckpointId = entry.info.id;
+            const result = BespokeStoryState.save(gameState);
+            if (!result.ok) {
+              console.warn("[Platformer] The checkpoint could not be saved:", result.errors);
+            }
+          }
         }
       });
     }

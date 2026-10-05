@@ -82,6 +82,29 @@
       font-weight: bold;
     }
 
+    #reuse-description {
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      color: #e2e8f0;
+      background: transparent;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    #reuse-description:focus-visible {
+      outline: 3px solid #60a5fa;
+      outline-offset: 3px;
+    }
+
+    #reuse-status {
+      margin: 8px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #e2e8f0;
+    }
+
     #prompt-help-text,
     #prompt-help {
       text-align: left;
@@ -133,6 +156,8 @@
     <label for="game-prompt">Describe the game you want to create</label>
     <textarea id="game-prompt" maxlength="1000" placeholder="Example: Explore an icy castle under the stars." aria-describedby="prompt-help-text"></textarea>
     <p id="prompt-help-text">Descriptions select existing adventures. Need ideas? Open the supported examples below.</p>
+    <button id="reuse-description" type="button">Reuse last description</button>
+    <p id="reuse-status" role="status" aria-live="polite"></p>
     <p id="request-error" role="alert" aria-live="polite"></p>
 
     <button class="game-button" type="button" data-mode="narrative" data-path="./fail%20safe/index.html">Create an Interactive Story</button>
@@ -163,6 +188,21 @@
     const promptInput = document.getElementById("game-prompt");
     const requestError = document.getElementById("request-error");
     const modeButtons = document.querySelectorAll("[data-mode]");
+
+    document.getElementById("reuse-description").addEventListener("click", function () {
+      const status = document.getElementById("reuse-status");
+      if (promptInput.value !== "") {
+        status.textContent = "Clear the description field first to reuse your last description.";
+        return;
+      }
+      const result = BespokeGameRequest.load();
+      if (!result.ok) {
+        status.textContent = "No saved description is available to reuse. You can enter a new one.";
+        return;
+      }
+      promptInput.value = result.request.prompt;
+      status.textContent = "Description restored. Edit it if you like, then choose Create to start a new adventure.";
+    });
 
     modeButtons.forEach(function (button) {
       button.addEventListener("click", function () {

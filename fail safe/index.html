@@ -770,6 +770,9 @@
 
   // Start New Story creates a fresh run while retaining the exact description.
   function startNewStory() {
+    pendingImportId++;
+    document.getElementById("importStatus").textContent = "";
+    document.getElementById("importError").hidden = true;
     if (!activeUnderwaterConfig || !originalPrompt) {
       generateGame();
       return;

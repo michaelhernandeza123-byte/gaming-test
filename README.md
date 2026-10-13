@@ -7,7 +7,7 @@ the bundled Phaser 3.80.1 engine. No package installation or API key is needed.
 
 ## Exact public-repository contents
 
-Include only these 23 website files, preserving their names and folders:
+Include only these 24 website files, preserving their names and folders:
 
 ```text
 README.md
@@ -30,6 +30,7 @@ shared/bespoke-story-format.js
 shared/bespoke-story-sample.js
 shared/bespoke-story-state.js
 shared/bespoke-touch-controls.js
+shared/bespoke-underwater-story.js
 stories/song-beneath-glass-reef.story.json
 vendor/phaser-3.80.1.min.js
 vendor/PHASER-LICENSE.md
@@ -48,8 +49,29 @@ Upload its contents, not its enclosing folder, so `index.html` stays at the root
 There is no build step. Do not copy the private development repository or change
 its visibility. Preparing this folder does not publish or deploy anything.
 
+## Underwater adventure and optional radio companion
+
+Underwater stories support mood, focus, and difficulty preferences. Mira is an
+optional authored radio guide whose fixed questions explain the current scene,
+available choices, reserve tradeoffs, and earned outcomes. She does not advance
+the story or provide live AI chat. Existing fantasy, space, imported stories, and
+platformer games retain their existing behavior. No new service or dependency is
+required; the included artwork is reused.
+
+The existing repository also contains legacy root-level copies of the eleven
+`fail safe/assets/*.svg` images, `phaser-3.80.1.min.js`, and `PHASER-LICENSE.md`.
+They are preserved for compatibility; the 24-file list above is the complete
+canonical website payload. Do not copy private tests or development notes.
+
 ## Quick verification
 
+- Try `Explore underwater and meet a whale` with Peaceful / Exploration / Easy;
+  complete an observation route and ask Mira about the ending. Then try
+  `Rescue a trapped whale underwater` with Tense / Helping / Challenging; check
+  that spending the reserve changes the remaining actions.
+- Open Mira with keyboard controls, ask twice, and confirm the scene does not
+  advance. Reload a saved run; Change then Cancel; verify the run is preserved
+  and the old radio reply clears. Mira stays hidden for imported stories.
 - From the root launcher, create `ocean` as an interactive story; use a choice and
   **Back to Bespoke Games**. Import the listed story JSON to play Glass Reef.
 - Create `ice castle`, `a challenging space adventure`, and an unsupported theme

@@ -32,6 +32,10 @@
       return invalid("This request belongs to the other game mode.");
     }
 
+    if (request.preferences !== undefined && (request.mode !== "narrative" || !validPreferences(request.preferences))) {
+      return invalid("Choose a valid mood, focus and difficulty for this narrative adventure.");
+    }
+
     if (
       typeof request.createdAt !== "string" ||
       Number.isNaN(Date.parse(request.createdAt))
@@ -43,18 +47,26 @@
   }
 
   // Create one predictable JSON-ready request object for both applications.
-  function create(prompt, mode) {
-    return {
+  function validPreferences(prefs) {
+    return !!prefs && typeof prefs === "object" && !Array.isArray(prefs) && Object.keys(prefs).length === 3 &&
+      ["peaceful", "tense"].includes(prefs.mood) && ["exploration", "helping"].includes(prefs.focus) &&
+      ["easy", "challenging"].includes(prefs.difficulty);
+  }
+
+  function create(prompt, mode, preferences) {
+    const request = {
       version: VERSION,
       prompt: typeof prompt === "string" ? prompt.trim() : prompt,
       mode: mode,
       createdAt: new Date().toISOString()
     };
+    if (preferences !== undefined) request.preferences = preferences && typeof preferences === "object" ? Object.assign({}, preferences) : preferences;
+    return request;
   }
 
   // Save the validated request under the one shared localStorage key.
-  function save(prompt, mode) {
-    const request = create(prompt, mode);
+  function save(prompt, mode, preferences) {
+    const request = create(prompt, mode, preferences);
 
     // Every new generation gets a later request time, even if two clicks occur
     // within the same millisecond. Story progress uses this value to isolate runs.
